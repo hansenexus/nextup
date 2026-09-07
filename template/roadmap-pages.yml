@@ -1,0 +1,64 @@
+name: roadmap
+
+# Publishes the PUBLIC roadmap projection to GitHub Pages: roadmap.public.json
+# plus a static page. Runs on yaml changes and on a schedule, because status
+# lives in issues, not in commits.
+#
+# Only `--audience public` ever runs here. On a private repo the Pages site is
+# still world-readable, which is fine for the public projection and wrong for
+# anything else — `nextup build` refuses to emit internal output under a
+# `pages`/`public` path for the same reason.
+#
+# Enable once: gh api -X POST repos/<owner>/<repo>/pages -f build_type=workflow
+
+on:
+  push:
+    branches: [__DEFAULT_BRANCH__]
+    paths:
+      - "roadmap.yaml"
+      - "**/roadmap.yaml"
+      - "nextup.config.yaml"
+      - ".github/workflows/roadmap.yml"
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Validate
+        run: bunx @hansenexus/nextup@__VERSION__ validate
+      - name: Build public projection
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: bunx @hansenexus/nextup@__VERSION__ build --audience public --site --out dist/public
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist/public
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v5

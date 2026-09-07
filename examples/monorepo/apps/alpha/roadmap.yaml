@@ -1,0 +1,41 @@
+schema: 1
+meta:
+  project: alpha
+  repo: example/monorepo
+  title: Alpha
+  version: 2
+  updated: 2026-09-01
+  public: true
+  current_phase: w2
+  scope: { label: app/alpha }
+  labels:
+    in_progress: [status/in-progress, status/review]
+    done: [status/done]
+phases:
+  - id: w1
+    title: Learn
+  - id: w2
+    title: Differentiate
+  - id: w3
+    title: Teach
+items:
+  - id: w1-core
+    title: Core loop
+    summary: Sign up, study, come back tomorrow.
+    phase: w1
+    visibility: public
+    issues: [10]
+  - id: w2-graph
+    title: Graph-driven choice
+    summary: The app picks what you learn next.
+    phase: w2
+    visibility: public
+    issues: [11, 12]
+  - id: w3-classes
+    title: Classes
+    summary: A teacher runs a class.
+    phase: w3
+    visibility: public
+    depends_on: [w2-graph]
+    status: proposed
+    since: 2026-09-01

@@ -1,0 +1,4 @@
+# Which roadmaps `nextup` walks from this root. `*` matches one path segment.
+roadmaps:
+  - roadmap.yaml
+  - apps/*/roadmap.yaml

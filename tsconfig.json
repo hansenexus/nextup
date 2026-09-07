@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "types": ["bun", "node"],
+    "paths": {
+      "@hansenexus/nextup": ["./index.ts"],
+      "@hansenexus/nextup/*": ["./*"]
+    }
+  },
+  "include": ["*.ts", "scripts/*.ts"],
+  "exclude": ["node_modules", "dist", "examples", "site", "ui-react", "wc"]
+}

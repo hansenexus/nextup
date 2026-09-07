@@ -1,0 +1,21 @@
+schema: 1
+meta:
+  project: beta
+  repo: example/monorepo
+  title: Beta
+  version: 1
+  updated: 2026-09-01
+  public: true
+  current_phase: P0
+  scope: { label: app/beta }
+phases:
+  - id: P0
+    title: Start
+items:
+  - id: p0-hello
+    title: Hello
+    summary: First slice.
+    phase: P0
+    visibility: public
+    status: planned
+    since: 2026-09-01

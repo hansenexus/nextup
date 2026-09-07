@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=../../schema/roadmap.schema.json
+schema: 1
+meta:
+  project: minimal
+  repo: example/minimal
+  title: Minimal
+  version: 1
+  updated: 2026-09-01
+  public: true
+  current_phase: P0
+
+phases:
+  - id: P0
+    title: Start
+    goal: One thing that works end to end.
+  - id: P1
+    title: Grow
+    goal: The second thing.
+
+items:
+  - id: p0-hello
+    title: Hello world
+    summary: The smallest useful slice.
+    phase: P0
+    visibility: public
+    status: planned
+    since: 2026-09-01
+    tasks:
+      - id: scaffold
+        title: Scaffold the project
+        acceptance: ["`npm test` passes on a fresh clone"]
+        verify: ["npm test"]
+  - id: p1-second
+    title: Second thing
+    summary: Builds on the first.
+    phase: P1
+    visibility: public
+    depends_on: [p0-hello]
+
+milestones:
+  - id: p0-out
+    title: First release
+    phase: P0
+    items: [p0-hello]
+    status: draft

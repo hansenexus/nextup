@@ -1,0 +1,90 @@
+/**
+ * The stylesheet, as a string, so the web component can inline it into its
+ * shadow root and `react/styles.css` can be generated from the same source
+ * (`bun run build:react` writes it). Everything is a `--nextup-*` variable
+ * with a sane default; a host page restyles by overriding variables, never by
+ * fighting selectors.
+ */
+
+export const STYLES = `
+.nextup-roadmap {
+  --nextup-fg: #1a1a1a;
+  --nextup-fg-muted: #6b6b6b;
+  --nextup-bg: transparent;
+  --nextup-card-bg: #ffffff;
+  --nextup-border: #e3e3e3;
+  --nextup-accent: #0e8a16;
+  --nextup-now: #1d76db;
+  --nextup-warn: #b45309;
+  --nextup-danger: #b60205;
+  --nextup-radius: 10px;
+  --nextup-gap: 12px;
+  --nextup-font: inherit;
+  color: var(--nextup-fg);
+  background: var(--nextup-bg);
+  font-family: var(--nextup-font);
+  line-height: 1.45;
+}
+.nextup-roadmap * { box-sizing: border-box; }
+.nextup-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; margin-bottom: var(--nextup-gap); }
+.nextup-header h2 { margin: 0; font-size: 1.4rem; }
+.nextup-version { color: var(--nextup-fg-muted); font-size: 0.85rem; }
+.nextup-stale { color: var(--nextup-warn); font-size: 0.8rem; border: 1px solid currentColor; border-radius: 999px; padding: 1px 8px; }
+.nextup-phases { display: grid; gap: var(--nextup-gap); grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.nextup-roadmap.is-view-list .nextup-phases { grid-template-columns: 1fr; }
+.nextup-phase { border: 1px solid var(--nextup-border); border-radius: var(--nextup-radius); padding: var(--nextup-gap); background: var(--nextup-card-bg); }
+.nextup-phase.is-current { border-color: var(--nextup-now); box-shadow: 0 0 0 1px var(--nextup-now); }
+.nextup-phase.is-done { opacity: 0.85; }
+.nextup-phase-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.nextup-phase-head h3 { margin: 0; font-size: 1.05rem; }
+.nextup-horizon { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--nextup-fg-muted); white-space: nowrap; }
+.nextup-phase.is-current .nextup-horizon { color: var(--nextup-now); }
+.nextup-goal { margin: 4px 0 0; color: var(--nextup-fg-muted); font-size: 0.9rem; }
+.nextup-meta { display: flex; gap: 10px; font-size: 0.8rem; color: var(--nextup-fg-muted); margin: 6px 0 10px; }
+.nextup-progress { height: 4px; background: var(--nextup-border); border-radius: 2px; overflow: hidden; margin-bottom: 10px; }
+.nextup-progress > span { display: block; height: 100%; background: var(--nextup-accent); }
+.nextup-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.nextup-item { border-left: 3px solid var(--nextup-border); padding: 4px 0 4px 10px; }
+.nextup-item.is-done { border-left-color: var(--nextup-accent); }
+.nextup-item.is-in-progress { border-left-color: var(--nextup-now); }
+.nextup-item.is-blocked { border-left-color: var(--nextup-danger); }
+.nextup-item.is-dropped { opacity: 0.55; text-decoration: line-through; }
+.nextup-item-title { font-weight: 600; }
+.nextup-item-summary { margin: 2px 0 0; font-size: 0.9rem; color: var(--nextup-fg-muted); }
+.nextup-badge { display: inline-block; font-size: 0.72rem; padding: 0 6px; border-radius: 999px; border: 1px solid var(--nextup-border); color: var(--nextup-fg-muted); margin-left: 6px; vertical-align: middle; }
+.nextup-badge.is-in-progress { color: var(--nextup-now); border-color: var(--nextup-now); }
+.nextup-badge.is-done { color: var(--nextup-accent); border-color: var(--nextup-accent); }
+.nextup-badge.is-blocked { color: var(--nextup-danger); border-color: var(--nextup-danger); }
+.nextup-badge.is-internal { color: var(--nextup-warn); border-color: var(--nextup-warn); }
+.nextup-links { margin: 4px 0 0; padding: 0; list-style: none; display: flex; gap: 10px; font-size: 0.8rem; }
+.nextup-links a { color: var(--nextup-now); }
+.nextup-internal { margin: 6px 0 0; font-size: 0.8rem; color: var(--nextup-fg-muted); }
+.nextup-internal ul { margin: 2px 0 0; padding-left: 16px; }
+.nextup-internal .is-open { color: var(--nextup-fg); }
+.nextup-warning { color: var(--nextup-warn); }
+.nextup-milestones { margin: 12px 0 0; padding: 8px 0 0; border-top: 1px dashed var(--nextup-border); font-size: 0.85rem; }
+.nextup-milestones h4 { margin: 0 0 4px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--nextup-fg-muted); }
+.nextup-milestone { display: flex; gap: 8px; align-items: baseline; }
+.nextup-milestone.is-draft { color: var(--nextup-fg-muted); }
+.nextup-milestone.is-draft .nextup-date { border: 1px dashed var(--nextup-border); border-radius: 4px; padding: 0 4px; }
+.nextup-milestone.is-reached .nextup-date { color: var(--nextup-accent); }
+.nextup-milestone.is-dropped { text-decoration: line-through; opacity: 0.6; }
+.nextup-date { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.nextup-roadmap.is-view-compact .nextup-goal,
+.nextup-roadmap.is-view-compact .nextup-item-summary,
+.nextup-roadmap.is-view-compact .nextup-milestones,
+.nextup-roadmap.is-view-compact .nextup-links { display: none; }
+.nextup-empty { color: var(--nextup-fg-muted); font-style: italic; }
+@media (prefers-color-scheme: dark) {
+  .nextup-roadmap {
+    --nextup-fg: #ececec;
+    --nextup-fg-muted: #a3a3a3;
+    --nextup-card-bg: #171717;
+    --nextup-border: #333;
+    --nextup-accent: #3fb950;
+    --nextup-now: #58a6ff;
+    --nextup-warn: #d29922;
+    --nextup-danger: #f85149;
+  }
+}
+`;

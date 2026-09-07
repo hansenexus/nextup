@@ -1,0 +1,155 @@
+# yaml-language-server: $schema=../../schema/roadmap.schema.json
+#
+# A game studio's roadmap: phases P0..P3 lifted from a PLAN.md phasing table,
+# an internal-only repo (`public: false`), bilingual titles, one dated
+# milestone with its provenance, one draft milestone without a date.
+
+schema: 1
+meta:
+  project: dev-empire
+  repo: example/dev-empire
+  title: { en: "dev-empire", de: "dev-empire" }
+  locales: [en, de]
+  version: 3
+  updated: 2026-09-07
+  public: false
+  current_phase: P1
+  labels:
+    blocked: [blocked, status:blocked, status:needs-human]
+    phase: { P0: phase-0, P1: phase-1 }
+
+phases:
+  - id: P0
+    title: { en: Bootstrap, de: Grundgerüst }
+    goal: { en: "Project skeleton, deterministic sim core, CI fast lane green.", de: "Projektgerüst, deterministischer Sim-Kern, CI-Schnellspur grün." }
+    gets_you: A repo that can be worked in lanes.
+  - id: P1
+    title: { en: Vertical slice, de: Vertikaler Schnitt }
+    goal: { en: "One 20–30 minute loop on desktop and phone.", de: "Eine Spielschleife von 20–30 Minuten auf Desktop und Handy." }
+    gets_you: Something a stranger can play.
+    target: 2026-Q4
+  - id: P2
+    title: { en: Second vertical, de: Zweite Vertikale }
+    goal: A second business line and the economy that connects them.
+    target: 2027-H1
+  - id: P3
+    title: { en: Polish + launch prep, de: Politur + Launch-Vorbereitung }
+    goal: Store pages, localisation, performance budget.
+
+items:
+  - id: p0-simcore
+    title: { en: "SimCore skeleton", de: "SimCore-Grundgerüst" }
+    summary: { en: "Deterministic tick loop, PRNG, save envelope.", de: "Deterministische Tick-Schleife, PRNG, Speicherformat." }
+    phase: P0
+    kind: epic
+    area: must-land
+    visibility: public
+    issues: [1, 2]
+    links:
+      - { title: "PLAN.md §Phasing", url: "docs/PLAN.md#phasing" }
+  - id: p0-ci
+    title: CI fast lane
+    summary: Headless sim tests on every push.
+    phase: P0
+    visibility: public
+    issues: [4]
+  - id: p0-ios-spike
+    title: iOS IL2CPP device build spike
+    phase: P0
+    visibility: internal
+    issues: [3]
+    owners: ["@lennard"]
+    notes: Needs a physical device; agents cannot do this one.
+  - id: p1-garage-loop
+    title: { en: "Garage loop", de: "Garagen-Schleife" }
+    summary: { en: "Take a job, build the thing, ship it, get paid.", de: "Auftrag annehmen, bauen, liefern, Geld bekommen." }
+    phase: P1
+    kind: epic
+    area: must-land
+    visibility: public
+    depends_on: [p0-simcore]
+    tasks:
+      - id: job-board
+        title: Job board with three job archetypes
+        description: The board is where every loop starts.
+        acceptance:
+          - Three archetypes appear with pay, deadline and difficulty
+          - Accepting a job moves it to the active slot
+        verify:
+          - dotnet test Tests/SimCore.Tests --filter JobBoard
+        labels: [phase-1]
+      - id: build-step
+        title: Build step consumes parts and time
+        acceptance:
+          - Building reduces inventory and advances the clock deterministically
+        verify:
+          - dotnet test Tests/SimCore.Tests --filter Build
+        blocked_by: [job-board]
+        labels: [phase-1]
+      - id: payout
+        title: Payout and reputation delta
+        acceptance:
+          - Completing a job pays out and moves reputation
+        verify:
+          - dotnet test Tests/SimCore.Tests --filter Payout
+        blocked_by: [build-step]
+        labels: [phase-1]
+  - id: p1-art-drop
+    title: Art P1 asset drop
+    summary: Garage tileset, props, player, emotes, UI skin.
+    phase: P1
+    area: art
+    visibility: public
+    issues: [21, 22, 23]
+  - id: p2-second-vertical
+    title: Second business line
+    summary: A second thing to run, and the economy that links it to the first.
+    phase: P2
+    visibility: public
+    depends_on: [p1-garage-loop]
+    status: proposed
+    since: 2026-08-28
+  - id: p3-store
+    title: Store pages
+    phase: P3
+    visibility: internal
+    status: proposed
+    since: 2026-08-28
+  - id: p0-dropped-idea
+    title: Multiplayer garage
+    phase: P0
+    visibility: public
+    summary: Two players in one garage.
+    status: dropped
+    since: 2026-08-20
+    reason: Premium single-player; no netcode in scope.
+
+milestones:
+  - id: p0-exit
+    title: { en: "P0 exit: CI green, sim deterministic", de: "P0-Abschluss: CI grün, Sim deterministisch" }
+    phase: P0
+    items: [p0-simcore, p0-ci]
+    status: reached
+    date: 2026-08-30
+    reached_at: 2026-08-30
+    source:
+      kind: release
+      ref: "PR #12 merged"
+      by: lennard
+      at: 2026-08-30
+  - id: p1-exit
+    title: { en: "P1 exit: 20–30 min loop on iPhone + desktop", de: "P1-Abschluss: 20–30-Minuten-Schleife auf iPhone + Desktop" }
+    phase: P1
+    items: [p1-garage-loop, p1-art-drop]
+    status: draft
+  - id: p1-playtest
+    title: First external playtest
+    phase: P1
+    items: [p1-garage-loop]
+    status: planned
+    date: 2026-12-15
+    source:
+      kind: decision
+      ref: dec_2026-09-01_dev-empire-playtest
+      by: lennard
+      at: 2026-09-01

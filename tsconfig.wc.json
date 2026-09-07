@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "lib": ["ES2022", "DOM", "DOM.Iterable"], "types": ["node"] },
+  "include": ["wc/**/*.ts", "types.ts", "schema.ts", "i18n.ts"],
+  "exclude": ["node_modules", "dist"]
+}

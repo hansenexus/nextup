@@ -1,0 +1,14 @@
+[
+  { "number": 1, "title": "SimCore: tick loop", "state": "closed", "labels": ["phase-0"], "body": "", "url": "https://github.com/example/dev-empire/issues/1" },
+  { "number": 2, "title": "SimCore: PRNG + save envelope", "state": "closed", "labels": ["phase-0"], "body": "", "url": "https://github.com/example/dev-empire/issues/2" },
+  { "number": 3, "title": "P0: iOS IL2CPP device build spike", "state": "open", "labels": ["phase-0", "blocked"], "body": "", "url": "https://github.com/example/dev-empire/issues/3" },
+  { "number": 4, "title": "CI: simcore tests on push", "state": "closed", "labels": ["phase-0"], "body": "", "url": "https://github.com/example/dev-empire/issues/4" },
+  { "number": 21, "title": "Art: style guide", "state": "open", "labels": ["ready", "phase-1", "art"], "body": "", "url": "https://github.com/example/dev-empire/issues/21" },
+  { "number": 22, "title": "Art: artgen toolkit", "state": "open", "labels": ["status:in-progress", "phase-1", "art"], "body": "", "url": "https://github.com/example/dev-empire/issues/22" },
+  { "number": 23, "title": "Art: P1 asset drop", "state": "open", "labels": ["phase-1", "art"], "body": "Blocked-by: #21\nBlocked-by: #22", "url": "https://github.com/example/dev-empire/issues/23" },
+  { "number": 40, "title": "[p1-garage-loop] Job board with three job archetypes", "state": "closed", "labels": ["roadmap", "phase-1"], "body": "## Description\n…\n\n---\nRoadmap-item: roadmap.yaml#p1-garage-loop\nRoadmap-task: roadmap.yaml#p1-garage-loop/job-board\n", "url": "https://github.com/example/dev-empire/issues/40" },
+  { "number": 41, "title": "[p1-garage-loop] Build step consumes parts and time", "state": "open", "labels": ["roadmap", "phase-1", "status:in-progress"], "body": "Blocked-by: #40\n\n---\nRoadmap-item: roadmap.yaml#p1-garage-loop\nRoadmap-task: roadmap.yaml#p1-garage-loop/build-step\n", "url": "https://github.com/example/dev-empire/issues/41" },
+  { "number": 50, "title": "stray roadmap issue", "state": "open", "labels": ["roadmap"], "body": "no marker here", "url": "https://github.com/example/dev-empire/issues/50" },
+  { "number": 51, "title": "renamed item issue", "state": "open", "labels": ["roadmap"], "body": "Roadmap-item: roadmap.yaml#no-such-item\n", "url": "https://github.com/example/dev-empire/issues/51" },
+  { "number": 60, "title": "a pull request", "state": "open", "labels": ["roadmap"], "body": "Roadmap-item: roadmap.yaml#p1-garage-loop\n", "url": "https://github.com/example/dev-empire/pull/60", "isPullRequest": true }
+]

@@ -1,0 +1,107 @@
+{
+  "name": "@hansenexus/nextup",
+  "version": "0.1.0",
+  "description": "Roadmaps as a committed roadmap.yaml: phases, items, milestones with provenance. Status rolls up from GitHub issues, tasks dispatch as ready-labelled issues, and one file projects to an internal view, a public JSON feed, a React component and a web component.",
+  "license": "MIT",
+  "keywords": [
+    "roadmap",
+    "yaml",
+    "github-issues",
+    "public-roadmap",
+    "agents",
+    "mcp",
+    "claude-code",
+    "cli",
+    "react",
+    "web-component"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hansenexus/nextup.git"
+  },
+  "homepage": "https://nextup.hansenexus.dev",
+  "bugs": "https://github.com/hansenexus/nextup/issues",
+  "engines": {
+    "node": ">=22",
+    "bun": ">=1.2"
+  },
+  "type": "module",
+  "bin": {
+    "nextup": "./dist/cli.js"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.react.json && tsc --noEmit -p tsconfig.wc.json",
+    "lint": "biome check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "schema:gen": "bun scripts/gen-schema.ts",
+    "build": "bun run build:core && bun run build:react && bun run build:wc && bun run build:types",
+    "build:core": "bun build cli.ts index.ts schema.ts github.ts --target=node --outdir=dist --external yaml --external zod --external @modelcontextprotocol/sdk && node scripts/banner.mjs",
+    "build:react": "bun run css:gen && bun build ui-react/index.tsx --outdir=dist/react --external react --external react/jsx-runtime && cp ui-react/styles.css dist/react/styles.css",
+    "build:wc": "bun build wc/index.ts --outdir=dist/wc && bun build wc/iife.ts --format=iife --minify --outfile=dist/wc/nextup-roadmap.iife.js",
+    "build:types": "tsc -p tsconfig.build.json && mv dist/ui-react/index.d.ts dist/react/index.d.ts && rm -rf dist/ui-react",
+    "prepublishOnly": "bun run build",
+    "css:gen": "bun scripts/gen-css.ts"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist/",
+    "schema/",
+    "template/",
+    "site-template/",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "import": "./dist/schema.js"
+    },
+    "./github": {
+      "types": "./dist/github.d.ts",
+      "import": "./dist/github.js"
+    },
+    "./react": {
+      "types": "./dist/react/index.d.ts",
+      "import": "./dist/react/index.js"
+    },
+    "./react/styles.css": "./dist/react/styles.css",
+    "./wc": {
+      "types": "./dist/wc/index.d.ts",
+      "import": "./dist/wc/index.js"
+    },
+    "./wc/iife": "./dist/wc/nextup-roadmap.iife.js",
+    "./schema/roadmap.schema.json": "./schema/roadmap.schema.json"
+  },
+  "peerDependencies": {
+    "react": ">=19"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "yaml": "^2.8.4",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.3.13",
+    "@types/bun": "latest",
+    "@types/node": "^25.6.2",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "happy-dom": "^20.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.14"
+  }
+}

@@ -1,0 +1,20 @@
+schema: 1
+meta:
+  project: platform
+  repo: example/monorepo
+  title: Platform
+  version: 1
+  updated: 2026-09-01
+  public: false
+  current_phase: now
+phases:
+  - id: now
+    title: Now
+  - id: next
+    title: Next
+items:
+  - id: shared-auth
+    title: Shared auth package
+    phase: now
+    status: planned
+    since: 2026-09-01

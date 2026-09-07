@@ -1,0 +1,97 @@
+name: ci
+
+# Three gates, smallest first, so a formatting slip fails in seconds rather
+# than after a full pack-and-install cycle:
+#
+#   check    — biome, tsc, vitest against the source tree.
+#   tarball  — pack, install the artifact into a scratch consumer, and drive
+#              init → validate → build through the INSTALLED cli. `cli.test.ts`
+#              cannot cover this: it runs the CLI from the checkout, so a file
+#              missing from the `files` allowlist only fails here.
+#   dist     — the bundled entry actually starts under plain node. The bin is
+#              built by `prepublishOnly`, so nothing else would notice it
+#              breaking until a publish had already gone out.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - run: bun install --frozen-lockfile
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Test
+        run: bun run test
+
+  tarball:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: bun install --frozen-lockfile
+
+      - name: Pack
+        run: |
+          set -euo pipefail
+          bun run build
+          npm pack --pack-destination /tmp
+          ls -l /tmp/*.tgz
+
+      - name: init/validate/build against the installed artifact
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/consumer && cd /tmp/consumer
+          npm init -y >/dev/null
+          npm i /tmp/hansenexus-nextup-*.tgz >/dev/null
+          npx nextup init --project smoke --repo o/smoke --phases P0,P1
+          npx nextup validate
+          sed -i 's/public: false/public: true/' roadmap.yaml   # the public build refuses public:false by design
+          NEXTUP_NO_GH=1 npx nextup build --no-github --site --out /tmp/site && npx nextup build --audience internal --no-github --out /tmp/internal
+          test -s /tmp/site/index.html && test -s /tmp/site/nextup-roadmap.iife.js && test -s /tmp/internal/roadmap.internal.json
+
+  dist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: bun install --frozen-lockfile
+
+      - name: Bundled CLI runs under node
+        run: |
+          set -euo pipefail
+          bun run build
+          node dist/cli.js --help

@@ -1,0 +1,4 @@
+schema: 1
+meta: { project: x, repo: o/r, title: X, version: 1, updated: 2026-09-01, current_phase: P0 }
+phases: [{ id: P0, title: Start }]
+items: [{ id: a, title: A, phase: P0, status: planned, since: 2026-09-01, issues: [4] }]
