@@ -57,7 +57,8 @@
       "!**/examples",
       "!**/site",
       "!**/site-template",
-      "!**/schema/*.json"
+      "!**/schema/*.json",
+      "!**/ui-react/styles.css"
     ]
   }
 }
