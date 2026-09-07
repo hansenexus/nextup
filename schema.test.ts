@@ -63,9 +63,14 @@ describe("roadmapSchema", () => {
     expect(ok.success).toBe(true);
     const bad = roadmapSchema.safeParse({
       ...base,
-      items: [{ id: "a", title: "A", phase: "P0", status: "done" }],
+      items: [{ id: "a", title: "A", phase: "P0", status: "in-progress" }],
     });
     expect(bad.success).toBe(false);
+    const shipped = roadmapSchema.safeParse({
+      ...base,
+      items: [{ id: "a", title: "A", phase: "P0", status: "done", since: "2026-08-12" }],
+    });
+    expect(shipped.success).toBe(true);
   });
 
   it("requires acceptance and verify on tasks", () => {

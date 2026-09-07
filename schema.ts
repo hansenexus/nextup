@@ -42,8 +42,13 @@ export const localizedStringSchema = z.union([
 export const visibilitySchema = z.enum(["public", "internal"]);
 export const itemKindSchema = z.enum(["theme", "epic", "wave"]);
 
-/** Values a human may WRITE. Everything else is derived from linked issues. */
-export const manualItemStatusSchema = z.enum(["proposed", "planned", "dropped"]);
+/**
+ * Values a human may WRITE, and only while nothing is linked: `proposed` and
+ * `planned` for what has no issues yet, `done` for what shipped before the
+ * roadmap existed (with `since` saying when), `dropped` for what was cut.
+ * Everything in between is derived from linked issues.
+ */
+export const manualItemStatusSchema = z.enum(["proposed", "planned", "done", "dropped"]);
 /** Values a reader may SEE. */
 export const itemStatusSchema = z.enum([
   "proposed",

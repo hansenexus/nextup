@@ -9,7 +9,7 @@ is what is not obvious from it, plus the parts that must not be "improved".
 bun install --frozen-lockfile   # bun ≥ 1.2; lockfile committed
 bun run lint                    # biome check .
 bun run typecheck               # three tsconfigs: core, ui-react, wc
-bun run test                    # vitest run (node; DOM tests opt in per file)
+bun run test                    # build:wc, then vitest (build.test.ts needs the wc bundle)
 bun run build                   # dist/: cli + barrel (node), react, wc (+iife), .d.ts
 bun run schema:gen              # schema/roadmap.schema.json — drift-tested
 ```

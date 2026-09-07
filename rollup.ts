@@ -188,6 +188,9 @@ export function rollupItem(
   }
   if (linked.length === 0 && undispatched === tasks.length) {
     const status: ItemStatus = item.status ?? "proposed";
+    if (status === "done" && wave && !waveSettled(wave)) {
+      warnings.push(`declared done but wave ${wave.wave} is ${wave.settled}/${wave.total} settled`);
+    }
     return {
       ...base,
       status,

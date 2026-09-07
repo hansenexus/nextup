@@ -46,7 +46,9 @@ milestones:
    `meta.current_phase`, never written.
 2. **Status is derived once anything is linked.** Closed issues → done, an
    issue labelled in-progress → in progress, all open issues blocked → blocked.
-   Write `status:` only on items with no issues yet, and say `since:` when.
+   Write `status:` only on items with no issues: `proposed`/`planned` for what
+   is not started, `done` for what shipped before the roadmap existed — and say
+   `since:` when.
 3. **A date needs a source.** Only milestones carry day-dates, and only with
    `source: { kind, by, at }`. Undated milestones render as drafts. A computed
    date is not a date.

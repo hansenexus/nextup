@@ -477,6 +477,7 @@
             "enum": [
               "proposed",
               "planned",
+              "done",
               "dropped"
             ]
           },
