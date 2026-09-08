@@ -6,7 +6,16 @@
 
 import type { ItemView, MilestoneView, PhaseView, RoadmapView } from "./view-model";
 
-export type ViewMode = "phases" | "list" | "compact";
+/**
+ * `phases`, `list` and `compact` share one markup and differ only by the
+ * `is-view-*` class. `ledger` and `bands` do not: a ledger needs a status cell
+ * of its own so the glyph, the title and the status word can hold three fixed
+ * columns, and bands walk `statusGroups` instead of `phases`. Both are
+ * additive — the three original modes emit exactly what they emitted before.
+ */
+export type ViewMode = "phases" | "list" | "compact" | "ledger" | "bands";
+
+const CELL_MODES: ReadonlySet<ViewMode> = new Set<ViewMode>(["ledger", "bands"]);
 
 export function esc(s: string): string {
   return s.replace(
@@ -19,16 +28,28 @@ function badge(label: string, cls: string): string {
   return `<span class="nextup-badge is-${esc(cls)}">${esc(label)}</span>`;
 }
 
-function renderItem(it: ItemView, view: RoadmapView): string {
+function renderItem(it: ItemView, view: RoadmapView, mode: ViewMode = "phases"): string {
+  const cells = CELL_MODES.has(mode);
   const parts: string[] = [];
   parts.push(
     `<li class="nextup-item is-${esc(it.status)}" id="${esc(view.project)}-${esc(it.id)}" data-item="${esc(it.id)}">`
   );
-  parts.push(`<div class="nextup-item-title">${esc(it.title)}${badge(it.statusLabel, it.status)}`);
+  // The glyph is decorative: the status is already written out beside it.
+  if (cells) parts.push('<span class="nextup-mark" aria-hidden="true"></span>');
+  parts.push(
+    `<div class="nextup-item-title">${esc(it.title)}${cells ? "" : badge(it.statusLabel, it.status)}`
+  );
   if (it.internal && it.internal.visibility === "internal")
     parts.push(badge("internal", "internal"));
   parts.push("</div>");
   if (it.summary) parts.push(`<p class="nextup-item-summary">${esc(it.summary)}</p>`);
+  if (cells) {
+    if (mode === "bands")
+      parts.push(
+        `<span class="nextup-item-phase">${esc(it.phaseId)} · ${esc(it.phaseTitle)}</span>`
+      );
+    parts.push(`<span class="nextup-item-status">${esc(it.statusLabel)}</span>`);
+  }
   if (it.links.length > 0) {
     parts.push('<ul class="nextup-links">');
     for (const l of it.links)
@@ -64,7 +85,7 @@ function renderMilestone(m: MilestoneView): string {
   return `<div class="nextup-milestone is-${esc(m.status)}"><span class="nextup-date">${esc(m.dateLabel)}</span><span>${esc(m.title)}</span>${badge(m.statusLabel, m.status)}</div>`;
 }
 
-function renderPhase(p: PhaseView, view: RoadmapView): string {
+function renderPhase(p: PhaseView, view: RoadmapView, mode: ViewMode = "phases"): string {
   const pct = p.progress.total > 0 ? Math.round((p.progress.done / p.progress.total) * 100) : 0;
   const parts: string[] = [];
   parts.push(
@@ -73,6 +94,7 @@ function renderPhase(p: PhaseView, view: RoadmapView): string {
   parts.push(
     `<div class="nextup-phase-head"><h3>${esc(p.title)}</h3><span class="nextup-horizon">${esc(p.horizonLabel)}${p.target ? ` · ${esc(p.target)}` : ""}</span></div>`
   );
+  if (p.getsYou) parts.push(`<p class="nextup-gets">${esc(p.getsYou)}</p>`);
   if (p.goal) parts.push(`<p class="nextup-goal">${esc(p.goal)}</p>`);
   parts.push(`<div class="nextup-meta"><span>${esc(p.progress.label)}</span></div>`);
   parts.push(
@@ -81,7 +103,7 @@ function renderPhase(p: PhaseView, view: RoadmapView): string {
   if (p.items.length === 0) parts.push(`<p class="nextup-empty">—</p>`);
   else {
     parts.push('<ul class="nextup-items">');
-    for (const it of p.items) parts.push(renderItem(it, view));
+    for (const it of p.items) parts.push(renderItem(it, view, mode));
     parts.push("</ul>");
   }
   if (p.milestones.length > 0) {
@@ -90,6 +112,31 @@ function renderPhase(p: PhaseView, view: RoadmapView): string {
     parts.push("</div>");
   }
   parts.push("</section>");
+  return parts.join("");
+}
+
+/**
+ * One band per status. Empty groups are dropped, except the two that mean
+ * something by their absence: a roadmap with nothing in progress and nothing
+ * blocked should say so rather than quietly omit the row.
+ */
+function renderBands(view: RoadmapView): string {
+  const parts: string[] = ['<div class="nextup-bands">'];
+  for (const g of view.statusGroups) {
+    if (g.items.length === 0 && g.status !== "in-progress" && g.status !== "blocked") continue;
+    parts.push(`<section class="nextup-band is-${esc(g.status)}" data-status="${esc(g.status)}">`);
+    parts.push(
+      `<div class="nextup-band-head"><h3>${esc(g.label)}</h3><span class="nextup-count">${g.items.length}</span></div>`
+    );
+    if (g.items.length === 0) parts.push(`<p class="nextup-empty">—</p>`);
+    else {
+      parts.push('<ul class="nextup-items">');
+      for (const it of g.items) parts.push(renderItem(it, view, "bands"));
+      parts.push("</ul>");
+    }
+    parts.push("</section>");
+  }
+  parts.push("</div>");
   return parts.join("");
 }
 
@@ -103,8 +150,13 @@ export function renderRoadmapHTML(view: RoadmapView, mode: ViewMode = "phases"):
   );
   if (view.stale) parts.push(`<span class="nextup-stale">${esc(view.staleLabel)}</span>`);
   parts.push("</header>");
+  if (mode === "bands") {
+    parts.push(renderBands(view));
+    parts.push("</div>");
+    return parts.join("");
+  }
   parts.push('<div class="nextup-phases">');
-  for (const p of view.phases) parts.push(renderPhase(p, view));
+  for (const p of view.phases) parts.push(renderPhase(p, view, mode));
   parts.push("</div></div>");
   return parts.join("");
 }

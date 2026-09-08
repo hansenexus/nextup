@@ -91,6 +91,10 @@ export function stringsFor(locale: string): Strings {
 export interface ItemView {
   id: string;
   title: string;
+  /** The phase this item sits in. Carried on the item so a status-grouped
+   *  view can name the phase without walking back up the tree. */
+  phaseId: string;
+  phaseTitle: string;
   summary: string;
   status: ItemStatus;
   statusLabel: string;
@@ -143,6 +147,28 @@ export interface PhaseView {
   milestones: MilestoneView[];
 }
 
+/**
+ * Every status, in a fixed order, with the items that carry it — the same
+ * items as `phases`, regrouped. Emitted for all six statuses even when empty:
+ * an empty "in progress" is a fact a renderer may want to state out loud, and
+ * deciding which groups deserve ink is presentation, not grouping.
+ */
+export interface StatusGroupView {
+  status: ItemStatus;
+  label: string;
+  items: ItemView[];
+}
+
+/** Urgency order: what is moving, what is stuck, then what is merely intended. */
+export const STATUS_ORDER: readonly ItemStatus[] = [
+  "in-progress",
+  "blocked",
+  "planned",
+  "proposed",
+  "done",
+  "dropped",
+];
+
 export interface RoadmapView {
   project: string;
   title: string;
@@ -153,6 +179,7 @@ export interface RoadmapView {
   staleLabel: string;
   currentPhase: string;
   phases: PhaseView[];
+  statusGroups: StatusGroupView[];
   strings: Strings;
 }
 
@@ -184,6 +211,8 @@ export function buildViewModel(data: AnyRoadmap, locale: string): RoadmapView {
       return {
         id: it.id,
         title: text(it.title, locale, fallbacks),
+        phaseId: p.id,
+        phaseTitle: text(p.title, locale, fallbacks),
         summary: text(it.summary, locale, fallbacks),
         status,
         statusLabel: s.status[status],
@@ -246,6 +275,13 @@ export function buildViewModel(data: AnyRoadmap, locale: string): RoadmapView {
     };
   });
 
+  const allItems = phases.flatMap((p) => p.items);
+  const statusGroups: StatusGroupView[] = STATUS_ORDER.map((status) => ({
+    status,
+    label: s.status[status],
+    items: allItems.filter((it) => it.status === status),
+  }));
+
   return {
     project: meta.project,
     title: text(meta.title, locale, fallbacks),
@@ -256,6 +292,7 @@ export function buildViewModel(data: AnyRoadmap, locale: string): RoadmapView {
     staleLabel: s.stale,
     currentPhase: meta.current_phase,
     phases,
+    statusGroups,
     strings: s,
   };
 }
