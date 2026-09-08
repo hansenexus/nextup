@@ -6,3 +6,4 @@ roadmap.internal.json
 site/node_modules/
 site/dist/
 .DS_Store
+.claude/launch.json

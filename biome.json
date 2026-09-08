@@ -58,6 +58,7 @@
       "!**/site",
       "!**/site-template",
       "!**/schema/*.json",
+      "!**/.nextup",
       "!**/ui-react/styles.css"
     ]
   }
