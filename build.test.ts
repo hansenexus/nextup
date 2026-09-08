@@ -208,3 +208,17 @@ describe("packageAsset", () => {
     expect(await packageAsset("site-template/index.html", from)).toBeNull();
   });
 });
+
+describe("dist/react bundle", () => {
+  // `bun build` without --production emits the DEVELOPMENT JSX runtime
+  // (`jsxDEV` from react/jsx-dev-runtime); production React exports jsxDEV as
+  // undefined, so <Roadmap> threw "jsxDEV is not a function" in every
+  // `next build` (found by two consumers on 0.1.1/0.1.2). The test script
+  // builds dist/react first, so this reads what ships.
+  it("is built on the production JSX runtime", () => {
+    const bundle = readFileSync(path.join(HERE, "dist", "react", "index.js"), "utf8");
+    expect(bundle).not.toContain("jsxDEV");
+    expect(bundle).not.toContain("react/jsx-dev-runtime");
+    expect(bundle).toMatch(/from ?"react\/jsx-runtime"/);
+  });
+});

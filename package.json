@@ -1,6 +1,6 @@
 {
   "name": "@hansenexus/nextup",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Roadmaps as a committed roadmap.yaml: phases, items, milestones with provenance. Status rolls up from GitHub issues, tasks dispatch as ready-labelled issues, and one file projects to an internal view, a public JSON feed, a React component and a web component.",
   "license": "MIT",
   "keywords": [
@@ -32,12 +32,12 @@
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.react.json && tsc --noEmit -p tsconfig.wc.json",
     "lint": "biome check .",
-    "test": "bun run build:wc && vitest run",
+    "test": "bun run build:wc && bun run build:react && vitest run",
     "test:watch": "vitest",
     "schema:gen": "bun scripts/gen-schema.ts",
     "build": "bun run build:core && bun run build:react && bun run build:wc && bun run build:types",
     "build:core": "bun build cli.ts index.ts schema.ts github.ts --target=node --outdir=dist --external yaml --external zod --external @modelcontextprotocol/sdk && node scripts/banner.mjs",
-    "build:react": "bun run css:gen && bun build ui-react/index.tsx --outdir=dist/react --external react --external react/jsx-runtime && cp ui-react/styles.css dist/react/styles.css",
+    "build:react": "bun run css:gen && bun build --production ui-react/index.tsx --outdir=dist/react --external react --external react/jsx-runtime && cp ui-react/styles.css dist/react/styles.css",
     "build:wc": "bun build wc/index.ts --outdir=dist/wc && bun build wc/iife.ts --format=iife --minify --outfile=dist/wc/nextup-roadmap.iife.js",
     "build:types": "tsc -p tsconfig.build.json && mv dist/ui-react/index.d.ts dist/react/index.d.ts && rm -rf dist/ui-react",
     "prepublishOnly": "bun run build",
