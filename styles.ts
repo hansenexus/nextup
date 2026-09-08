@@ -6,6 +6,32 @@
  * fighting selectors.
  */
 
+/** The two palettes, declared once and emitted three ways: the light one as
+ *  the element's own defaults, the dark one under both the media query and the
+ *  `data-nextup-theme` attribute. Keeping them here is what stops the forced
+ *  theme from drifting away from the automatic one. */
+const LIGHT_VARS = `
+    --nextup-fg: #1a1a1a;
+    --nextup-fg-muted: #6b6b6b;
+    --nextup-card-bg: #ffffff;
+    --nextup-border: #e3e3e3;
+    --nextup-accent: #0e8a16;
+    --nextup-now: #1d76db;
+    --nextup-warn: #b45309;
+    --nextup-danger: #b60205;
+`;
+
+const DARK_VARS = `
+    --nextup-fg: #ececec;
+    --nextup-fg-muted: #a3a3a3;
+    --nextup-card-bg: #171717;
+    --nextup-border: #333;
+    --nextup-accent: #3fb950;
+    --nextup-now: #58a6ff;
+    --nextup-warn: #d29922;
+    --nextup-danger: #f85149;
+`;
+
 export const STYLES = `
 .nextup-roadmap {
   --nextup-fg: #1a1a1a;
@@ -26,6 +52,10 @@ export const STYLES = `
   line-height: 1.45;
 }
 .nextup-roadmap * { box-sizing: border-box; }
+/* The cell views below ask a container query, not a media query: this
+   component is a block on someone else's page and is as likely to be narrow
+   in a sidebar on a desktop as on a phone. */
+.nextup-roadmap { container-type: inline-size; container-name: nextup; }
 .nextup-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; margin-bottom: var(--nextup-gap); }
 .nextup-header h2 { margin: 0; font-size: 1.4rem; }
 .nextup-version { color: var(--nextup-fg-muted); font-size: 0.85rem; }
@@ -97,8 +127,12 @@ export const STYLES = `
 /* Ledger is glyph/body/status; bands insert the phase tag before the status. */
 .nextup-roadmap.is-view-ledger .nextup-item-status { grid-column: 3; }
 .nextup-roadmap.is-view-bands .nextup-item-status { grid-column: 4; }
+/* Anything else the item renders belongs in the content column, not in the
+   glyph gutter that auto-placement would pick. */
 .nextup-roadmap.is-view-ledger .nextup-links,
-.nextup-roadmap.is-view-ledger .nextup-internal { grid-column: 2; }
+.nextup-roadmap.is-view-ledger .nextup-internal,
+.nextup-roadmap.is-view-bands .nextup-links,
+.nextup-roadmap.is-view-bands .nextup-internal { grid-column: 2; }
 
 /* Shipped phases are one line: title, payoff, horizon. */
 .nextup-roadmap.is-view-ledger .nextup-phase.is-done { display: grid; grid-template-columns: minmax(0, 14rem) minmax(0, 1fr) max-content; align-items: baseline; column-gap: 12px; padding: 8px 0; }
@@ -147,17 +181,32 @@ export const STYLES = `
 .nextup-band.is-done .nextup-item-title { font-weight: 500; color: var(--nextup-fg-muted); }
 .nextup-band.is-done .nextup-item-summary { display: none; }
 .nextup-band.is-proposed .nextup-item-title { font-weight: 500; }
+/* ── narrow ──────────────────────────────────────────────────────────
+   Fixed columns cannot hold at a phone width: the title, the phase tag and
+   the status word end up on top of each other. Below the breakpoint every
+   cell view becomes glyph + stacked content, with the metadata on its own
+   line under the title. */
+@container nextup (max-width: 640px) {
+  .nextup-roadmap.is-view-ledger .nextup-item,
+  .nextup-roadmap.is-view-bands .nextup-item { grid-template-columns: 22px minmax(0, 1fr); row-gap: 2px; }
+  .nextup-roadmap.is-view-ledger .nextup-item-status,
+  .nextup-roadmap.is-view-bands .nextup-item-status { grid-column: 2; grid-row: auto; text-align: left; }
+  .nextup-roadmap.is-view-bands .nextup-item-phase { grid-column: 2; grid-row: auto; white-space: normal; padding-right: 0; }
+  .nextup-roadmap.is-view-ledger .nextup-phase.is-done { grid-template-columns: minmax(0, 1fr); row-gap: 2px; }
+  .nextup-roadmap.is-view-ledger .nextup-phase.is-done .nextup-phase-head h3,
+  .nextup-roadmap.is-view-ledger .nextup-phase.is-done .nextup-gets,
+  .nextup-roadmap.is-view-ledger .nextup-phase.is-done .nextup-horizon { grid-column: 1; grid-row: auto; text-align: left; }
+  .nextup-roadmap.is-view-ledger .nextup-phase.is-current { padding-left: 10px; }
+  .nextup-roadmap.is-view-ledger .nextup-phase-head h3 { font-size: 1.15rem; }
+  .nextup-roadmap.is-view-ledger .nextup-gets { font-size: 1rem; }
+}
 
 @media (prefers-color-scheme: dark) {
-  .nextup-roadmap {
-    --nextup-fg: #ececec;
-    --nextup-fg-muted: #a3a3a3;
-    --nextup-card-bg: #171717;
-    --nextup-border: #333;
-    --nextup-accent: #3fb950;
-    --nextup-now: #58a6ff;
-    --nextup-warn: #d29922;
-    --nextup-danger: #f85149;
-  }
+  .nextup-roadmap { ${DARK_VARS} }
 }
+/* The same palette as an attribute, so a host with its own theme toggle (or a
+   preview harness that must show both grounds side by side) can force it
+   without waiting on the OS. Set data-nextup-theme on any ancestor. */
+[data-nextup-theme="dark"] .nextup-roadmap { ${DARK_VARS} }
+[data-nextup-theme="light"] .nextup-roadmap { ${LIGHT_VARS} }
 `;
