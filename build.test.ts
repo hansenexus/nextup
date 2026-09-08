@@ -1,8 +1,9 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
-import { guardInternalOut, LoadError, loadStatus, writeBuild } from "./build";
+import { guardInternalOut, LoadError, loadStatus, packageAsset, writeBuild } from "./build";
 import { findForbiddenKeys } from "./project";
 import { publicRoadmapSchema } from "./schema";
 
@@ -110,6 +111,37 @@ describe("writeBuild", () => {
     );
   });
 
+  it("nests under <project>/ whenever a config lists the roadmaps, even a single one", async () => {
+    // A consumer's URL must not move the day a second app adds a roadmap.
+    const repo = path.join(tmp, "config-single");
+    mkdirSync(repo, { recursive: true });
+    writeFileSync(path.join(repo, "nextup.config.yaml"), "roadmaps: [roadmap.yaml]\n");
+    writeFileSync(
+      path.join(repo, "roadmap.yaml"),
+      readFileSync(path.join(HERE, "examples", "minimal", "roadmap.yaml"), "utf8")
+    );
+    const statuses = await loadStatus({ cwd: repo, noGithub: true, today: "2026-09-07" });
+    expect(statuses[0]?.source).toBe("config");
+    const out = path.join(tmp, "config-single-out");
+    const report = await writeBuild(statuses, { audience: "public", out });
+    const project = statuses[0]?.roadmap.meta.project ?? "";
+    expect(report.written.sort()).toEqual([`${project}/roadmap.public.json`, "index.json"].sort());
+    const index = JSON.parse(readFileSync(path.join(out, "index.json"), "utf8"));
+    expect(index[0]?.path).toBe(`${project}/roadmap.public.json`);
+  });
+
+  it("writes flat when the roadmap was found on its own (--file or nearest roadmap.yaml)", async () => {
+    const statuses = await loadStatus({
+      cwd: path.join(HERE, "examples", "minimal"),
+      noGithub: true,
+      today: "2026-09-07",
+    });
+    expect(statuses[0]?.source).toBe("file");
+    const out = path.join(tmp, "flat-out");
+    const report = await writeBuild(statuses, { audience: "public", out });
+    expect(report.written.sort()).toEqual(["index.json", "roadmap.public.json"]);
+  });
+
   it("internal audience refuses pages-like output directories", () => {
     expect(guardInternalOut(path.join(tmp, "dist", "public"))).toMatch(/public/);
     expect(guardInternalOut(path.join(tmp, "gh-pages"))).toMatch(/gh-pages/);
@@ -156,5 +188,23 @@ describe("writeBuild", () => {
     expect((await writeBuild(changed, { audience: "public", out, check: true })).drift).toContain(
       "roadmap.public.json"
     );
+  });
+});
+
+describe("packageAsset", () => {
+  it("resolves through a path that needs percent-decoding (bunx installs `nextup@^0.1`)", async () => {
+    const root = path.join(tmp, "nextup@^0.1");
+    mkdirSync(path.join(root, "dist"), { recursive: true });
+    mkdirSync(path.join(root, "site-template"), { recursive: true });
+    writeFileSync(path.join(root, "site-template", "index.html"), "<html></html>");
+    const from = pathToFileURL(path.join(root, "dist", "cli.js")).href;
+    expect(from).toContain("%5E");
+    expect(await packageAsset("site-template/index.html", from)).toBe(
+      path.join(root, "site-template", "index.html")
+    );
+  });
+  it("returns null when the asset does not exist anywhere up the tree", async () => {
+    const from = pathToFileURL(path.join(tmp, "nowhere", "dist", "cli.js")).href;
+    expect(await packageAsset("site-template/index.html", from)).toBeNull();
   });
 });

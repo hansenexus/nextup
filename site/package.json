@@ -1,0 +1,15 @@
+{
+  "name": "nextup-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/assets.mjs && astro dev",
+    "build": "node scripts/assets.mjs && astro build",
+    "preview": "astro preview",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.41.8",
+    "astro": "^7.2.6"
+  }
+}

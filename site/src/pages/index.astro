@@ -1,0 +1,206 @@
+---
+import CopyCommand from "../components/CopyCommand.astro";
+import TerminalCard from "../components/TerminalCard.astro";
+import Landing from "../layouts/Landing.astro";
+
+const REPO = "https://github.com/hansenexus/nextup";
+const NPM = "https://www.npmjs.com/package/@hansenexus/nextup";
+---
+
+<Landing
+  title="nextup — what's next, as a committed file"
+  description="Roadmaps as a committed roadmap.yaml: status rolled up from GitHub issues, tasks dispatched as issues, one file projected to an internal page, a public feed, a React component and a web component."
+>
+  <header class="nav">
+    <a class="wordmark" href="/">nextup</a>
+    <nav>
+      <a href="/getting-started/">Docs</a>
+      <a href={REPO}>GitHub</a>
+      <a href={NPM}>npm</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1>what's next, as a committed file</h1>
+      <p class="lede">
+        One <code>roadmap.yaml</code> per project says what you are doing, in what order, and how
+        far along it is. <strong>nextup</strong> rolls status up from the issues, opens issues an
+        agent can pick up, and renders the same file for the team and for the public.
+      </p>
+
+      <CopyCommand command="npx @hansenexus/nextup init --pages" />
+
+      <p class="hero-links">
+        <a href="/getting-started/">Get started</a>
+        <span class="sep">·</span>
+        <a href={REPO}>Source</a>
+        <span class="sep">·</span>
+        <a href="/rules/">The three rules</a>
+      </p>
+    </section>
+
+    <section class="grid">
+      <article>
+        <h2>Phases carry time</h2>
+        <p>
+          Phases are ordered and may name a quarter, nothing finer. <code>now / next / later</code>
+          is derived from one pointer, <code>current_phase</code>, never written by hand.
+        </p>
+      </article>
+      <article>
+        <h2>Status is derived</h2>
+        <p>
+          Once an item has issues, its status comes from them: closed → done, labelled → in
+          progress, all blocked → blocked. A manual status on a linked item fails validation.
+        </p>
+      </article>
+      <article>
+        <h2>A date needs a source</h2>
+        <p>
+          Only milestones carry day-dates, and only with who committed to it and when. Undated
+          milestones render as drafts. A computed date is not a date.
+        </p>
+      </article>
+    </section>
+
+    <section class="demo">
+      <TerminalCard caption="status, rolled up from GitHub" command="nextup status">
+<span class="ok">done</span>         p0-simcore           4 closed, nothing open
+<span class="ok">done</span>         p0-save-envelope     #4 closed, nothing open
+<span class="warn">in-progress</span>  p1-garage-loop       #7 in progress (2 open, 1 closed)
+<span class="off">planned</span>      p1-first-screens     2 task(s) not dispatched yet (0 closed)
+<span class="off">proposed</span>     p2-staff             manual status since 2026-09-07
+
+P1 · now      2/5 done      next: P2 · 0/2
+</TerminalCard>
+    </section>
+
+    <section class="grid two">
+      <article>
+        <h2>For agents</h2>
+        <p>
+          <code>nextup next</code> lists the frontier; <code>nextup dispatch &lt;item&gt;</code>
+          opens one issue per task with acceptance criteria, verification commands and
+          <code>Blocked-by:</code> lines, <code>ready</code> only where blockers are closed. A
+          read-only MCP server answers the same questions in a lane.
+        </p>
+        <p><a href="/dispatch/">Dispatch →</a> <span class="sep">·</span> <a href="/mcp/">MCP →</a></p>
+      </article>
+      <article>
+        <h2>For the public</h2>
+        <p>
+          <code>build --audience public</code> writes a whitelisted JSON feed — no issue numbers,
+          owners or notes — plus a static page. Render it with the React component or the web
+          component, on any site, in any locale the file carries.
+        </p>
+        <p><a href="/sites/">Sites →</a> <span class="sep">·</span> <a href="/pages/">GitHub Pages →</a></p>
+      </article>
+    </section>
+
+    <footer>
+      MIT · <a href={REPO}>source</a> · built by <a href="https://hansenexus.dev">hansenexus</a>
+    </footer>
+  </main>
+</Landing>
+
+<style>
+  .nav {
+    max-width: 62rem;
+    margin: 0 auto;
+    padding: 1.1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .wordmark {
+    font-weight: 700;
+    color: var(--fg);
+    text-decoration: none;
+    letter-spacing: -0.01em;
+  }
+  .nav nav {
+    display: flex;
+    gap: 1.25rem;
+    font-size: 0.9375rem;
+  }
+  .nav nav a {
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .nav nav a:hover {
+    color: var(--fg);
+  }
+  main {
+    max-width: 62rem;
+    margin: 0 auto;
+    padding: 0 1.25rem 4rem;
+  }
+  .hero {
+    padding: 4rem 0 3rem;
+    max-width: 40rem;
+  }
+  h1 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    margin: 0 0 1rem;
+  }
+  .lede {
+    font-size: 1.125rem;
+    color: var(--muted);
+    margin: 0 0 1.5rem;
+  }
+  .lede strong {
+    color: var(--fg);
+  }
+  .hero-links {
+    margin-top: 1rem;
+    font-size: 0.9375rem;
+  }
+  .sep {
+    color: var(--line);
+    margin: 0 0.5rem;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+    margin: 1rem 0 2.5rem;
+  }
+  .grid.two {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .grid article {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--panel);
+    padding: 1.1rem 1.2rem;
+  }
+  .grid h2 {
+    font-size: 1rem;
+    margin: 0 0 0.5rem;
+  }
+  .grid p {
+    margin: 0 0 0.5rem;
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+  .demo {
+    margin: 0 0 2.5rem;
+  }
+  .demo :global(.ok) { color: var(--ok); }
+  .demo :global(.warn) { color: var(--warn); }
+  .demo :global(.off) { color: var(--off); }
+  footer {
+    border-top: 1px solid var(--line);
+    padding-top: 1rem;
+    font-size: 0.8125rem;
+    color: var(--muted);
+  }
+  @media (max-width: 720px) {
+    .grid, .grid.two {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -15,6 +15,7 @@
 
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { loadFleetState } from "./fleet-state";
 import { createGitHubClient, fetchRoadmapIssues, type GitHubClient, GitHubError } from "./github";
 import {
@@ -39,9 +40,18 @@ import type {
 } from "./types";
 import { validateRoadmap } from "./validate";
 
+/**
+ * How a roadmap was found. Decides the output layout: a roadmap found on its
+ * own (`--file`, or the nearest roadmap.yaml) writes flat; anything a config
+ * or an estate listed writes under `<project>/`, even when the list has one
+ * entry today — a consumer's URL must not move the day a second one appears.
+ */
+export type LoadSource = "file" | "config" | "estate";
+
 export interface LoadedStatus {
   /** Repo root when loaded from disk; null for estate (GitHub) loads. */
   root: string | null;
+  source: LoadSource;
   /** Repo-relative roadmap path. */
   file: string;
   roadmap: Roadmap;
@@ -107,7 +117,7 @@ export async function loadStatus(options: LoadStatusOptions): Promise<LoadedStat
   const { client, staleReason } = await resolveClient(options);
   const out: LoadedStatus[] = [];
 
-  const sources: Array<LoadedRoadmap & { root: string | null }> = [];
+  const sources: Array<LoadedRoadmap & { root: string | null; source: LoadSource }> = [];
   if (options.estate) {
     if (!client) throw new LoadError(`estate build needs a GitHub token (${staleReason})`, 3);
     for (const entry of options.estate.repos) {
@@ -125,6 +135,7 @@ export async function loadStatus(options: LoadStatusOptions): Promise<LoadedStat
           absolute: `${entry.repo}/${file}`,
           roadmap: parsed.value,
           root: null,
+          source: "estate",
         });
       }
     }
@@ -143,6 +154,7 @@ export async function loadStatus(options: LoadStatusOptions): Promise<LoadedStat
       absolute,
       roadmap: parsed.value,
       root,
+      source: "file",
     });
   } else {
     const located = await locate(options.cwd);
@@ -158,7 +170,8 @@ export async function loadStatus(options: LoadStatusOptions): Promise<LoadedStat
         .join("\n");
       throw new LoadError(msg, 1);
     }
-    for (const l of all.loaded) sources.push({ ...l, root: located.root });
+    const source: LoadSource = located.via === "config" ? "config" : "file";
+    for (const l of all.loaded) sources.push({ ...l, root: located.root, source });
   }
 
   for (const src of sources) {
@@ -188,6 +201,7 @@ export async function loadStatus(options: LoadStatusOptions): Promise<LoadedStat
     });
     out.push({
       root: src.root,
+      source: src.source,
       file: src.file,
       roadmap: src.roadmap,
       validation,
@@ -259,9 +273,18 @@ async function readIfExists(file: string): Promise<string | null> {
   }
 }
 
-/** Where the package's own assets live, whether running from source or from dist/. */
-export async function packageAsset(rel: string): Promise<string | null> {
-  const here = path.dirname(new URL(import.meta.url).pathname);
+/**
+ * Where the package's own assets live, whether running from source or from
+ * dist/. `from` is a file URL and goes through fileURLToPath on purpose:
+ * `new URL(u).pathname` keeps percent-encoding, and bunx installs a ranged
+ * spec under a directory literally named `nextup@^0.1` — the `^` came back as
+ * `%5E` and every asset lookup missed.
+ */
+export async function packageAsset(
+  rel: string,
+  from: string = import.meta.url
+): Promise<string | null> {
+  const here = path.dirname(fileURLToPath(from));
   for (const base of [here, path.join(here, ".."), path.join(here, "..", "..")]) {
     const candidate = path.join(base, rel);
     try {
@@ -290,7 +313,7 @@ export async function writeBuild(
     }
     return true;
   });
-  const single = eligible.length === 1;
+  const single = eligible.length === 1 && eligible[0]?.source === "file";
   const fileName = options.audience === "public" ? "roadmap.public.json" : "roadmap.internal.json";
   const entries: IndexEntry[] = [];
   const writes: Array<{ file: string; text: string }> = [];

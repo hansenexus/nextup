@@ -55,8 +55,12 @@ milestones:
 
 ## Commands
 
+Run it with `npx @hansenexus/nextup <command>` (node ≥ 20) or
+`bunx --bun @hansenexus/nextup <command>` (bun only, no node). Docs:
+[nextup.hansenexus.dev](https://nextup.hansenexus.dev).
+
 ```
-bunx @hansenexus/nextup init --pages        scaffold roadmap.yaml (+ Pages workflow)
+nextup init --pages                         scaffold roadmap.yaml (+ Pages workflow)
 nextup validate [--live]                    check the file; --live checks issue links too
 nextup status [--json] [--fleet-state p]    roll status up from GitHub
 nextup next                                 what is dispatchable now
@@ -121,7 +125,11 @@ roadmaps: [roadmap.yaml, "apps/*/roadmap.yaml"]
 
 Every command then walks all of them (`--file` narrows). Each app's roadmap
 carries `meta.scope.label` (e.g. `app/alpha`) so issues are attributed to the
-right one.
+right one. `build` writes `<out>/<project>/roadmap.public.json` for every
+roadmap a config lists — nested even when the list has one entry, so a URL a
+site depends on does not move when the next app adds a roadmap — plus an
+`index.json` the static page reads. A roadmap found on its own (`--file`, or
+the nearest `roadmap.yaml`) writes flat.
 
 ## Development
 

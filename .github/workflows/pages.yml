@@ -1,0 +1,67 @@
+name: pages
+
+# The docs site at nextup.hansenexus.dev (site/, Astro Starlight).
+#
+# Deliberately separate from ci.yml: a typo in a docs page must not touch the
+# gates that guard a release, and a red CI run must not block a docs fix.
+#
+# The custom domain lives in the repo's Pages SETTINGS, not in a CNAME file —
+# a `public/CNAME` is inert for an Actions deployment. Set once with:
+#
+#     gh api -X PUT repos/hansenexus/nextup/pages -f cname=nextup.hansenexus.dev
+#
+# and the DNS record ("nextup" → hansenexus.github.io) lives in hn-infra's
+# terraform cname map next to mechanics.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - ".github/workflows/pages.yml"
+  pull_request:
+    paths:
+      - "site/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  # Never cancel a deploy in flight: a half-published site is worse than a
+  # slightly stale one.
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+        working-directory: site
+      - run: bun run build
+        working-directory: site
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site/dist
+
+  deploy:
+    # Pull requests build but do not publish — the build job on a PR catches
+    # a broken site before it is merged, it does not preview it.
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v5
