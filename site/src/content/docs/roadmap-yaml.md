@@ -83,7 +83,8 @@ Ordered. Each phase:
 | `since` | — | required with a manual status |
 | `reason` | — | required with `dropped` |
 | `mechanics_wave` | `null` | `done` additionally needs this wave all green |
-| `owners`, `notes`, `links` | | internal |
+| `owners`, `notes` | | internal |
+| `links` | `[]` | `{ title, url }` pairs; ship in both projections, resolved against `meta.repo` (below) |
 | `clients` | `[]` | reserved for a client tier; must stay empty in schema 1 |
 
 ### tasks
@@ -103,6 +104,32 @@ tasks:
 
 `acceptance` and `verify` each need at least one entry: an issue without a
 way to check it is not something an agent should pick up.
+
+### links
+
+```yaml
+links:
+  - { title: Design note, url: docs/design/blueprint-module.md }
+  - { title: Tracking board, url: "https://github.com/orgs/acme/projects/4" }
+```
+
+A `url` is written from the repository's point of view, but the projection is
+rendered on somebody else's origin — a consumer site, a Pages build — where a
+relative href would resolve against the wrong host. So `build` (and every
+other path that writes a projection) resolves links before they leave:
+
+| `url` in the file | in the projection |
+|---|---|
+| `docs/x.md`, `./docs/x.md`, `/docs/x.md`, `docs/x.md#section` | `https://github.com/<meta.repo>/blob/HEAD/docs/x.md` (fragment kept) |
+| `https://…`, `//cdn.…`, `mailto:…`, `tel:…` | untouched |
+| `#section` | untouched |
+| `../outside-the-repo`, `?query-only` | dropped; `validate` warns (V15) |
+
+`HEAD` rather than a branch name on purpose: GitHub resolves it to the
+default branch, so the output is the same with or without a token and does
+not drift when `master` becomes `main`. The React component and the web
+component render whatever the projection carries, so a relative href never
+reaches a page.
 
 ## milestones
 

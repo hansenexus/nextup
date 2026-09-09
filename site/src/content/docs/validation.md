@@ -28,6 +28,7 @@ roadmap.yaml: warning V5 items[5].depends_on[0]: depends on "p2-staff" which is 
 | V12 | `meta.updated` and `reached_at` are not in the future | error |
 | V13 | a phase with no items | warning |
 | V14 | `mechanics_wave` references need `meta.mechanics_waves` and the wave file must exist | error |
+| V15 | an item link that cannot be resolved against `meta.repo` (climbs out of the repo, query-only) — it is dropped from the projections | warning |
 
 `--live` adds three network checks: every linked issue number exists,
 markers on `roadmap`-labelled issues resolve to an item, and a manual status

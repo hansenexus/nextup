@@ -1,5 +1,5 @@
 /**
- * Offline validation, rules V2–V14. V1 (shape) is the Zod parse in `load.ts`.
+ * Offline validation, rules V2–V15. V1 (shape) is the Zod parse in `load.ts`.
  *
  * Errors are things a build must not ship; warnings are things a reviewer
  * should see in the PR. The split is the point: a public item without a
@@ -12,6 +12,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { topoSort } from "./graph";
 import { missingLocale, resolveText } from "./i18n";
+import { resolveLink } from "./links";
 import { taskKey } from "./markers";
 import type { Finding, Roadmap, ValidationResult } from "./types";
 
@@ -276,6 +277,19 @@ export async function validateRoadmap(
       );
     }
   }
+
+  // V15 — a link the projections would have to drop: the reader sees a title
+  // with nothing behind it, and the author should hear why before the build.
+  roadmap.items.forEach((item, i) => {
+    item.links.forEach((l, j) => {
+      if (resolveLink(l.url, roadmap.meta.repo) !== null) return;
+      warn(
+        "V15",
+        `items[${i}].links[${j}].url`,
+        `"${item.id}" link "${l.title}" (${l.url}) cannot be resolved against ${roadmap.meta.repo} and is dropped from the projections — use a repo-relative path, an absolute URL, mailto: or #fragment`
+      );
+    });
+  });
 
   // Title sanity for the fallback locale — a roadmap that cannot render its own name is broken.
   if (resolveText(roadmap.meta.title, fallback).trim() === "")

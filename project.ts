@@ -8,8 +8,13 @@
  * apart silently.
  *
  * `toInternal` is everything, plus what the rollup learned.
+ *
+ * Both resolve item `links` against `meta.repo` (see `links.ts`): a
+ * projection is consumed on somebody else's origin, so a relative href must
+ * not leave here.
  */
 
+import { resolveLinks } from "./links";
 import type {
   InternalRoadmap,
   Item,
@@ -75,7 +80,7 @@ export function toPublic(roadmap: Roadmap, roll: Rollup): PublicRoadmap {
       kind: it.kind,
       ...(it.area ? { area: it.area } : {}),
       depends_on: it.depends_on.filter((d) => visibleIds.has(d)),
-      links: it.links,
+      links: resolveLinks(it.links, roadmap.meta.repo),
       ...(it.since ? { since: it.since } : {}),
     };
   });
@@ -149,6 +154,7 @@ export function toInternal(roadmap: Roadmap, roll: Rollup, file: string): Intern
       const r = roll.items[it.id];
       return {
         ...it,
+        links: resolveLinks(it.links, roadmap.meta.repo),
         horizon: r?.horizon ?? "later",
         derived_status: r?.status ?? it.status ?? "proposed",
         because: r?.because ?? "",

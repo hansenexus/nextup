@@ -101,6 +101,30 @@ milestones:
     expect(v6.length).toBe(2);
   });
 
+  it("warns (V15), naming item and link, when a link cannot be resolved against the repo", async () => {
+    const parsed = parseRoadmap(`schema: 1
+meta: { project: x, repo: o/r, title: X, version: 1, updated: 2026-09-01, current_phase: P0 }
+phases: [{ id: P0, title: A }]
+items:
+  - id: a
+    title: A
+    phase: P0
+    links:
+      - { title: fine, url: docs/x.md }
+      - { title: also fine, url: "https://example.com" }
+      - { title: escapes, url: ../elsewhere/x.md }
+`);
+    if (!parsed.ok) throw new Error("parse");
+    const r = await validateRoadmap(parsed.value, { today: TODAY });
+    expect(r.errors).toEqual([]);
+    const v15 = r.warnings.filter((w) => w.rule === "V15");
+    expect(v15.length).toBe(1);
+    expect(v15[0]?.path).toBe("items[0].links[2].url");
+    expect(v15[0]?.message).toContain('"a"');
+    expect(v15[0]?.message).toContain("../elsewhere/x.md");
+    expect(v15[0]?.message).toContain("o/r");
+  });
+
   it("errors (V14) when the wave file is missing under root", async () => {
     const parsed = parseRoadmap(`schema: 1
 meta: { project: x, repo: o/r, title: X, version: 1, updated: 2026-09-01, current_phase: P0, mechanics_waves: waves }
