@@ -25,7 +25,9 @@ describe("parseHarnessState", () => {
     expect(s.locale).toBe("de");
     expect(s.audience).toBe("internal");
     expect(s.theme).toBe("light");
-    expect(s.skin).toBe(NO_SKIN);
+    // A declared skin wins the default; the package look stays selectable.
+    expect(s.skin).toBe("lexilink");
+    expect(parseHarnessState(new URLSearchParams(""), { projects }).skin).toBe(NO_SKIN);
   });
   it("falls back rather than trusting the query string", () => {
     // An unknown mode must not reach renderRoadmapHTML as a class name.
@@ -33,7 +35,8 @@ describe("parseHarnessState", () => {
     expect(parse("device=nonsense").device).toBe("laptop");
     expect(parse("theme=neon").theme).toBe("light");
     // An undeclared skin must not reach the file reader.
-    expect(parse("skin=../../etc/passwd").skin).toBe(NO_SKIN);
+    expect(parse("skin=../../etc/passwd").skin).toBe("lexilink");
+    expect(parse("skin=nextup").skin).toBe(NO_SKIN);
     expect(parse("skin=lexilink").skin).toBe("lexilink");
     // A locale the project does not declare falls back to its first.
     expect(parse("project=other&locale=de").locale).toBe("en");

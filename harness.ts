@@ -86,10 +86,13 @@ export function parseHarnessState(
   const device = params.get("device") ?? "laptop";
   const theme = params.get("theme");
   const locale = params.get("locale");
-  const skin = params.get("skin") ?? NO_SKIN;
+  // A declared skin is the point of previewing: default to the first one and
+  // let the package's own look be an explicit choice, not the thing you land on.
+  const skins = opts.skins ?? [];
+  const skin = params.get("skin") ?? skins[0]?.id ?? NO_SKIN;
   return {
     project: known?.id ?? "",
-    skin: (opts.skins ?? []).some((x) => x.id === skin) ? skin : NO_SKIN,
+    skin: skin === NO_SKIN || skins.some((x) => x.id === skin) ? skin : (skins[0]?.id ?? NO_SKIN),
     view: view && VIEW_MODES.includes(view) ? view : "ledger",
     locale: locale && known?.locales.includes(locale) ? locale : (known?.locales[0] ?? "en"),
     audience: params.get("audience") === "public" ? "public" : "internal",
