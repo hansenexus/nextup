@@ -47,6 +47,10 @@ turns it into JSX. Add a field to the view model, then to both renderers.
 - **Status is derived once linked.** `rollup.ts` is a pure function; every
   branch has a fixture test. Manual `status:` on a linked item is a validation
   error, not a preference.
+- **Item links leave resolved.** `links.ts` turns a relative `url` into a
+  `github.com/<repo>/blob/HEAD/…` URL in BOTH projections and drops what it
+  cannot resolve (V15 warns). Renderers never see a relative href; do not add
+  a second resolver in a renderer.
 - **dispatch is dry-run by default** and creates only issues + the `roadmap`
   label. It never edits an existing issue, never removes a label, never writes
   yaml, never sets `auto-merge-ok` without `--auto-merge`, and puts `ready`

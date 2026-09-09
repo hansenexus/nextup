@@ -14,6 +14,16 @@ Every projection carries `version`, `updated`, `generated_at` and `stale`;
 the components render "v3 · Stand 2026-09-07" and a *Stand veraltet* badge
 when the data is stale.
 
+Item links arrive resolved: a relative `url` in the yaml is already a
+`https://github.com/<repo>/blob/HEAD/…` URL by the time a component sees it
+(see [roadmap.yaml → links](/roadmap-yaml/#links)), so a site never emits an
+href that resolves against its own origin by accident.
+
+Each phase's progress bar is a `role="progressbar"` counted in items
+(`aria-valuenow` done, `aria-valuemax` total) and named in the requested
+locale — "3 of 8 done" / "3 von 8 erledigt" — so a screen reader announces
+the phase's progress rather than a bare bar.
+
 ## React
 
 ```tsx

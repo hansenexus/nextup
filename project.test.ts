@@ -78,6 +78,43 @@ items:
     const r2 = rollup({ roadmap: p2.value, file: "roadmap.yaml", issues: [] });
     expect(toPublic(p2.value, r2).items[0]?.depends_on).toEqual([]);
   });
+  it("resolves relative item links against meta.repo at HEAD; absolute ones pass through", () => {
+    // examples/dev-empire links `docs/PLAN.md#phasing` — the exact case new-campus hit.
+    const simcore = pub.items.find((i) => i.id === "p0-simcore");
+    expect(simcore?.links).toEqual([
+      {
+        title: "PLAN.md §Phasing",
+        url: "https://github.com/example/dev-empire/blob/HEAD/docs/PLAN.md#phasing",
+      },
+    ]);
+    const p2 = parseRoadmap(`schema: 1
+meta: { project: x, repo: o/r, title: X, version: 1, updated: 2026-09-01, public: true, current_phase: P0 }
+phases: [{ id: P0, title: A }]
+items:
+  - id: a
+    title: A
+    summary: S
+    phase: P0
+    visibility: public
+    links:
+      - { title: site, url: "https://example.com/x" }
+      - { title: mail, url: "mailto:a@b" }
+      - { title: anchor, url: "#top" }
+      - { title: doc, url: ./docs/x.md }
+      - { title: escapes, url: ../other/x.md }
+`);
+    if (!p2.ok) throw new Error("parse");
+    const r2 = rollup({ roadmap: p2.value, file: "roadmap.yaml", issues: [] });
+    const links = toPublic(p2.value, r2).items[0]?.links.map((l) => l.url);
+    expect(links).toEqual([
+      "https://example.com/x",
+      "mailto:a@b",
+      "#top",
+      "https://github.com/o/r/blob/HEAD/docs/x.md",
+    ]);
+    // Every link a projection ships is one a browser can follow from any origin.
+    expect(findForbiddenKeys(toPublic(p2.value, r2))).toEqual([]);
+  });
   it("an internal phase hides its public items", () => {
     const p2 = parseRoadmap(`schema: 1
 meta: { project: x, repo: o/r, title: X, version: 1, updated: 2026-09-01, public: true, current_phase: P0 }
@@ -105,5 +142,13 @@ describe("toInternal", () => {
   });
   it("would be caught by the forbidden-key walk (sanity check of the guard itself)", () => {
     expect(findForbiddenKeys(internal).length).toBeGreaterThan(0);
+  });
+  it("resolves item links the same way the public projection does", () => {
+    // The internal page is served from a tailnet forward, not from the repo:
+    // a relative href is just as broken there.
+    const simcore = internal.items.find((i) => i.id === "p0-simcore");
+    expect(simcore?.links.map((l) => l.url)).toEqual([
+      "https://github.com/example/dev-empire/blob/HEAD/docs/PLAN.md#phasing",
+    ]);
   });
 });

@@ -47,4 +47,22 @@ describe("<Roadmap>", () => {
     const html = renderToStaticMarkup(<Roadmap data={toPublic(roadmap, roll)} />);
     expect(html).toContain('lang="en"');
   });
+  it("names the phase progress bar and counts it in items, in the requested locale", () => {
+    // P0 in dev-empire: 2 of 2 public items done.
+    const en = renderToStaticMarkup(<Roadmap data={toPublic(roadmap, roll)} locale="en" />);
+    expect(en).toContain(
+      '<div class="nextup-progress" role="progressbar" aria-label="2 of 2 done" aria-valuemin="0" aria-valuemax="2" aria-valuenow="2">'
+    );
+    const de = renderToStaticMarkup(<Roadmap data={toPublic(roadmap, roll)} locale="de" />);
+    expect(de).toContain('aria-label="2 von 2 erledigt" aria-valuemin="0" aria-valuemax="2"');
+    // Never percent: a bar over 100 would read as "2 of 100".
+    expect(en).not.toContain('aria-valuemax="100"');
+  });
+  it("emits item links already resolved against the repo", () => {
+    const html = renderToStaticMarkup(<Roadmap data={toPublic(roadmap, roll)} locale="en" />);
+    expect(html).toContain(
+      'href="https://github.com/example/dev-empire/blob/HEAD/docs/PLAN.md#phasing"'
+    );
+    expect(html).not.toContain('href="docs/');
+  });
 });

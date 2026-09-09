@@ -1,6 +1,6 @@
 {
   "name": "@hansenexus/nextup",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Roadmaps as a committed roadmap.yaml: phases, items, milestones with provenance. Status rolls up from GitHub issues, tasks dispatch as ready-labelled issues, and one file projects to an internal view, a public JSON feed, a React component and a web component.",
   "license": "MIT",
   "keywords": [

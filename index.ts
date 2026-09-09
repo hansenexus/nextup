@@ -27,6 +27,7 @@ export type { ClientOptions, CreateIssueInput, GitHubClient } from "./github";
 export { createGitHubClient, fetchRoadmapIssues, GitHubError } from "./github";
 export { reachable, topoSort } from "./graph";
 export { localesOf, missingLocale, resolveText } from "./i18n";
+export { GITHUB_LINK_REF, resolveLink, resolveLinks } from "./links";
 export type { LoadAllResult, LoadedRoadmap, Located, ParseResult } from "./load";
 export {
   expandGlobs,

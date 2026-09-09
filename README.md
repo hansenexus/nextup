@@ -25,6 +25,8 @@ items:
     phase: P1
     visibility: public
     depends_on: [p0-simcore]
+    links:
+      - { title: Design note, url: docs/design/garage-loop.md }
     tasks:
       - id: job-board
         title: Job board with three job archetypes
@@ -52,6 +54,13 @@ milestones:
 3. **A date needs a source.** Only milestones carry day-dates, and only with
    `source: { kind, by, at }`. Undated milestones render as drafts. A computed
    date is not a date.
+
+Item `links` are written from the repo's point of view and leave resolved: a
+relative `url` such as `docs/design/garage-loop.md` becomes
+`https://github.com/<meta.repo>/blob/HEAD/docs/design/garage-loop.md` in
+every projection (`HEAD` is the default branch, whatever it is called).
+Absolute URLs, `mailto:` and `#fragment` links pass through untouched; a link
+that cannot be resolved (`../outside`) is dropped and `validate` warns (V15).
 
 ## Commands
 

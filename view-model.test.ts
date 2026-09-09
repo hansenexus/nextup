@@ -79,6 +79,19 @@ describe("renderRoadmapHTML", () => {
     expect(html2).not.toContain("<script>alert");
     expect(html2).toContain("&lt;script&gt;");
   });
+  it("names the phase progress bar and counts it in items, escaped, in the requested locale", () => {
+    const en = renderRoadmapHTML(buildViewModel(toPublic(roadmap, roll), "en"));
+    expect(en).toContain(
+      '<div class="nextup-progress" role="progressbar" aria-label="2 of 2 done" aria-valuemin="0" aria-valuemax="2" aria-valuenow="2">'
+    );
+    const de = renderRoadmapHTML(buildViewModel(toPublic(roadmap, roll), "de"));
+    expect(de).toContain('aria-label="2 von 2 erledigt" aria-valuemin="0" aria-valuemax="2"');
+    expect(en).not.toContain('aria-valuemax="100"');
+    // The same markup the React component emits, attribute for attribute.
+    expect(en).toContain(
+      'href="https://github.com/example/dev-empire/blob/HEAD/docs/PLAN.md#phasing"'
+    );
+  });
   it("compact mode is a class, not a different tree", () => {
     const html = renderRoadmapHTML(buildViewModel(toPublic(roadmap, roll), "en"), "compact");
     expect(html).toContain("is-view-compact");

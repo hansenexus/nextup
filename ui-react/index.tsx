@@ -143,12 +143,15 @@ function Phase({
       <div className="nextup-meta">
         <span>{p.progress.label}</span>
       </div>
+      {/* Counted in items, not percent, and named: a screen reader says
+          "2 of 8 done" rather than announcing a bare bar. */}
       <div
         className="nextup-progress"
         role="progressbar"
-        aria-valuenow={pct}
+        aria-label={p.progress.label}
         aria-valuemin={0}
-        aria-valuemax={100}
+        aria-valuemax={p.progress.total}
+        aria-valuenow={p.progress.done}
       >
         <span style={{ width: `${pct}%` }} />
       </div>
