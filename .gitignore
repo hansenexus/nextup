@@ -7,3 +7,6 @@ site/node_modules/
 site/dist/
 .DS_Store
 .claude/launch.json
+
+# Per-worktree dev port slot (scripts/dev-port.sh) — never commit a lane's slot.
+.dev-port
