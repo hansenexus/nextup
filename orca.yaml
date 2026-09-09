@@ -55,3 +55,11 @@ defaultTabs:
     command: |-
         g="$(git rev-parse --git-dir 2>/dev/null)"; [ "$g" = "$(git rev-parse --git-common-dir 2>/dev/null)" ] || { i=0; while [ ! -e "$g/orca-setup-done" ] && [ "$i" -lt 150 ]; do sleep 1; i=$((i+1)); done; [ -e "$g/orca-setup-done" ] || echo "orca-tab: gave up waiting ${i}s for setup - it may have failed or been skipped"; }; bun run test
     color: "#059669"
+  # On-demand: resolves this lane's port and prints how to serve + look at the
+  # roadmap view. Boots nothing. `nextup serve` defaults to 4177, which the mac
+  # holds permanently via the dev.hansenexus.nextup-serve LaunchAgent, so a lane
+  # must not use the default.
+  - title: preview
+    command: |-
+        g="$(git rev-parse --git-dir 2>/dev/null)"; [ "$g" = "$(git rev-parse --git-common-dir 2>/dev/null)" ] || { i=0; while [ ! -e "$g/orca-setup-done" ] && [ "$i" -lt 150 ]; do sleep 1; i=$((i+1)); done; [ -e "$g/orca-setup-done" ] || echo "orca-tab: gave up waiting ${i}s for setup - it may have failed or been skipped"; }; echo "this lane: $(bash scripts/dev-port.sh --url)"; echo; echo 'serve it:  bun cli.ts serve --port $(bash scripts/dev-port.sh)'; echo 'open it:   orca tab create --worktree current --url "$(bash scripts/dev-port.sh --url)"'; echo 'look:      orca snapshot   |   orca screenshot --format png'; echo; exec "${SHELL:-bash}" -i
+    color: "#0ea5e9"
