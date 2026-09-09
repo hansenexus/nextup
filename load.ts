@@ -14,7 +14,7 @@ import path from "node:path";
 import YAML from "yaml";
 import type { z } from "zod";
 import { configSchema, estateSchema, roadmapSchema } from "./schema";
-import type { EstateConfig, Finding, NextupConfig, Roadmap } from "./types";
+import type { EstateConfig, Finding, NextupConfig, Roadmap, Skin } from "./types";
 
 export const ROADMAP_FILENAME = "roadmap.yaml";
 export const CONFIG_FILENAME = "nextup.config.yaml";
@@ -86,6 +86,8 @@ export interface Located {
   files: string[];
   /** Which file decided the walk. */
   via: "config" | "roadmap";
+  /** Host skins for the serve harness; empty unless a config declared them. */
+  skins: Skin[];
 }
 
 async function exists(p: string): Promise<boolean> {
@@ -116,12 +118,12 @@ export async function locate(cwd: string): Promise<Located | null> {
     const parsed = parseConfig(await fs.readFile(cfg, "utf8"));
     if (parsed.ok) {
       const files = await expandGlobs(dir, parsed.value.roadmaps);
-      return { root: dir, files, via: "config" };
+      return { root: dir, files, via: "config", skins: parsed.value.skins ?? [] };
     }
   }
   for (const dir of ancestors) {
     if (await exists(path.join(dir, ROADMAP_FILENAME))) {
-      return { root: dir, files: [ROADMAP_FILENAME], via: "roadmap" };
+      return { root: dir, files: [ROADMAP_FILENAME], via: "roadmap", skins: [] };
     }
   }
   return null;

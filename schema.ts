@@ -202,9 +202,32 @@ export const roadmapSchema = z.strictObject({
   milestones: z.array(milestoneSchema).default([]),
 });
 
+/**
+ * A host's skin, for `serve`'s harness only: the stylesheets a consuming app
+ * wraps the component in, so the preview shows what that app will show rather
+ * than the package defaults. Never read by `build` — a projection carries no
+ * styling, and a skin must not be able to change what is published.
+ */
+export const skinSchema = z.strictObject({
+  id: z
+    .string()
+    .min(1)
+    .regex(/^[a-z0-9][a-z0-9-]*$/, "lower-case slug"),
+  label: z.string().min(1).optional(),
+  /** Applied in order, after the component's own stylesheet. */
+  css: z.array(z.string().min(1)).min(1),
+  /** Class on a wrapper around the roadmap, when the host scopes its tokens. */
+  wrapper: z.string().min(1).optional(),
+  /** Class the host sets for its dark ground, when it does not use the media query. */
+  dark: z.string().min(1).optional(),
+  /** Stylesheet URLs to load first (webfonts). */
+  links: z.array(z.url()).optional(),
+});
+
 /** `nextup.config.yaml` at a repo root: which roadmap files `--all` walks. */
 export const configSchema = z.strictObject({
   roadmaps: z.array(z.string().min(1)).min(1),
+  skins: z.array(skinSchema).optional(),
 });
 
 /** Estate config for `build --estate`: roadmaps fetched from GitHub, no checkouts. */

@@ -44,8 +44,19 @@ export const DEVICES: readonly Device[] = [
   { id: "fit", label: "Fit", width: 0, height: null },
 ] as const;
 
+/** A skin as the harness needs it: the CSS already read off disk. */
+export interface LoadedSkin {
+  id: string;
+  label: string;
+  css: string;
+  wrapper: string | null;
+  dark: string | null;
+  links: string[];
+}
+
 export interface HarnessState {
   project: string;
+  skin: string;
   view: ViewMode;
   locale: string;
   audience: Audience;
@@ -56,12 +67,17 @@ export interface HarnessState {
 
 export interface HarnessOptions {
   projects: { id: string; title: string; locales: string[] }[];
+  /** Empty when no config declared any; the picker then offers only defaults. */
+  skins: { id: string; label: string }[];
   state: HarnessState;
 }
 
+/** The package's own look, always offered so a skin can be compared against it. */
+export const NO_SKIN = "nextup";
+
 export function parseHarnessState(
   params: URLSearchParams,
-  opts: { projects: HarnessOptions["projects"] }
+  opts: { projects: HarnessOptions["projects"]; skins?: { id: string }[] }
 ): HarnessState {
   const first = opts.projects[0];
   const project = params.get("project") ?? first?.id ?? "";
@@ -70,8 +86,10 @@ export function parseHarnessState(
   const device = params.get("device") ?? "laptop";
   const theme = params.get("theme");
   const locale = params.get("locale");
+  const skin = params.get("skin") ?? NO_SKIN;
   return {
     project: known?.id ?? "",
+    skin: (opts.skins ?? []).some((x) => x.id === skin) ? skin : NO_SKIN,
     view: view && VIEW_MODES.includes(view) ? view : "ledger",
     locale: locale && known?.locales.includes(locale) ? locale : (known?.locales[0] ?? "en"),
     audience: params.get("audience") === "public" ? "public" : "internal",
@@ -88,6 +106,7 @@ export function harnessFrameQuery(s: HarnessState): string {
     locale: s.locale,
     audience: s.audience,
     theme: s.theme,
+    skin: s.skin,
   }).toString();
 }
 
@@ -96,15 +115,29 @@ export function harnessFrameQuery(s: HarnessState): string {
  * measures is the component's own behaviour at that width rather than the
  * harness chrome's.
  */
-export function renderHarnessFrame(body: string, theme: Theme, locale: string): string {
-  return `<!doctype html><html lang="${esc(locale)}" data-nextup-theme="${esc(theme)}"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+export function renderHarnessFrame(
+  body: string,
+  theme: Theme,
+  locale: string,
+  skin?: LoadedSkin | null
+): string {
+  // A host that scopes its tokens needs its wrapper, and one that toggles dark
+  // with a class needs that class — otherwise the skin renders half-applied and
+  // the preview lies in a way that is worse than showing the defaults.
+  const wrapped = skin?.wrapper ? `<div class="${esc(skin.wrapper)}">${body}</div>` : body;
+  const htmlClass = skin?.dark && theme === "dark" ? ` class="${esc(skin.dark)}"` : "";
+  const links = (skin?.links ?? []).map((u) => `<link rel="stylesheet" href="${esc(u)}">`).join("");
+  // The skin comes last so its variable mapping wins over the defaults above,
+  // including the forced-ground block, which is the point of a skin.
+  return `<!doctype html><html lang="${esc(locale)}" data-nextup-theme="${esc(theme)}"${htmlClass}><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">${links}
 <style>
 ${STYLES}
 html { color-scheme: ${theme}; }
 body { margin: 0; padding: 20px; background: ${theme === "dark" ? "#0d0d0d" : "#ffffff"};
   font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
-</style></head><body>${body}</body></html>`;
+${skin ? `/* skin: ${skin.id} */\n${skin.css}` : ""}
+</style></head><body>${wrapped}</body></html>`;
 }
 
 function option(value: string, label: string, selected: string): string {
@@ -112,7 +145,7 @@ function option(value: string, label: string, selected: string): string {
 }
 
 export function renderHarnessPage(opts: HarnessOptions): string {
-  const { projects, state } = opts;
+  const { projects, skins, state } = opts;
   const project = projects.find((p) => p.id === state.project);
   const src = `/harness/frame?${harnessFrameQuery(state)}`;
   const sel = (name: string, html: string, label: string) =>
@@ -153,6 +186,7 @@ noscript { color:var(--mut); }
     ${sel("audience", ["internal", "public"].map((a) => option(a, a, state.audience)).join(""), "Audience")}
     ${sel("device", DEVICES.map((d) => option(d.id, d.width ? `${d.label} · ${d.width}` : d.label, state.device)).join(""), "Device")}
     ${sel("theme", ["light", "dark"].map((t) => option(t, t, state.theme)).join(""), "Theme")}
+    ${skins.length > 0 ? sel("skin", [option(NO_SKIN, "nextup (default)", state.skin), ...skins.map((k) => option(k.id, k.label, state.skin))].join(""), "Skin") : ""}
   </form>
   <div class="f"><span>Orientation</span><div class="seg">
     <a href="#" data-set="landscape=0" class="${state.landscape ? "" : "on"}">Portrait</a>
