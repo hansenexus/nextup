@@ -44,6 +44,7 @@ commands
   dispatch   open issues for an item's tasks (dry run; --apply to create)
   build      write roadmap.public.json / roadmap.internal.json (+ --site)
   serve      loopback dev server for the internal view (--static <dir> to serve a build)
+             /harness inspects every view mode at any width, locale and ground
   mcp        read-only MCP server on stdio
 
 flags
@@ -647,6 +648,7 @@ async function cmdServe(args: Args): Promise<number> {
   console.log(
     `${green("nextup serve")} ${url} ${dim(str(args, "static") ? `(static ${str(args, "static")})` : "(internal view, live)")}`
   );
+  if (!str(args, "static")) console.log(dim(`  harness  ${url}/harness`));
   await new Promise(() => {
     // run until killed
   });

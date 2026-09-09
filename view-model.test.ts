@@ -83,6 +83,75 @@ describe("renderRoadmapHTML", () => {
     const html = renderRoadmapHTML(buildViewModel(toPublic(roadmap, roll), "en"), "compact");
     expect(html).toContain("is-view-compact");
   });
+  it("the three original modes emit the same tree; ledger and bands do not", () => {
+    const vm = buildViewModel(toPublic(roadmap, roll), "en");
+    const strip = (m: "phases" | "list" | "compact") =>
+      renderRoadmapHTML(vm, m).replace(`is-view-${m}`, "is-view-X");
+    expect(strip("list")).toBe(strip("phases"));
+    expect(strip("compact")).toBe(strip("phases"));
+    // The cell modes add a status cell and a decorative glyph.
+    expect(renderRoadmapHTML(vm, "phases")).not.toContain("nextup-item-status");
+    expect(renderRoadmapHTML(vm, "ledger")).toContain("nextup-item-status");
+    expect(renderRoadmapHTML(vm, "ledger")).toContain('class="nextup-mark" aria-hidden="true"');
+  });
+  it("ledger keeps phase order and drops the inline badge for a status cell", () => {
+    const vm = buildViewModel(toPublic(roadmap, roll), "en");
+    const html = renderRoadmapHTML(vm, "ledger");
+    expect(html).toContain("is-view-ledger");
+    expect(html).toContain('<div class="nextup-phases">');
+    const order = [...html.matchAll(/data-phase="([^"]+)"/g)].map((m) => m[1]);
+    expect(order).toEqual(vm.phases.map((p) => p.id));
+    // A phase's payoff line is rendered, not just its goal.
+    const withGets = vm.phases.find((p) => p.getsYou);
+    if (withGets) expect(html).toContain('class="nextup-gets"');
+  });
+  it("bands walk statusGroups, tag each item with its phase, and keep the empty hot bands", () => {
+    const vm = buildViewModel(toPublic(roadmap, roll), "en");
+    const html = renderRoadmapHTML(vm, "bands");
+    expect(html).toContain("is-view-bands");
+    expect(html).toContain('<div class="nextup-bands">');
+    expect(html).not.toContain('<div class="nextup-phases">');
+    expect(html).toContain("nextup-item-phase");
+    // in-progress and blocked keep a band even at zero; the rest do not.
+    for (const g of vm.statusGroups) {
+      const shown = g.items.length > 0 || g.status === "in-progress" || g.status === "blocked";
+      expect(html.includes(`data-status="${g.status}"`)).toBe(shown);
+    }
+    // Every item appears exactly once across the bands.
+    const ids = [...html.matchAll(/data-item="([^"]+)"/g)].map((m) => m[1]);
+    expect(ids.length).toBe(vm.phases.flatMap((p) => p.items).length);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe("statusGroups", () => {
+  it("regroups the same items in urgency order without losing or duplicating any", () => {
+    const vm = buildViewModel(toPublic(roadmap, roll), "en");
+    expect(vm.statusGroups.map((g) => g.status)).toEqual([
+      "in-progress",
+      "blocked",
+      "planned",
+      "proposed",
+      "done",
+      "dropped",
+    ]);
+    const flat = vm.phases.flatMap((p) => p.items).map((i) => i.id);
+    const grouped = vm.statusGroups.flatMap((g) => g.items).map((i) => i.id);
+    expect(grouped.sort()).toEqual(flat.sort());
+    for (const g of vm.statusGroups) for (const it of g.items) expect(it.status).toBe(g.status);
+  });
+  it("every item names the phase it came from", () => {
+    const vm = buildViewModel(toPublic(roadmap, roll), "de");
+    for (const p of vm.phases)
+      for (const it of p.items) {
+        expect(it.phaseId).toBe(p.id);
+        expect(it.phaseTitle).toBe(p.title);
+      }
+  });
+  it("labels follow the locale", () => {
+    const de = buildViewModel(toPublic(roadmap, roll), "de");
+    expect(de.statusGroups.find((g) => g.status === "in-progress")?.label).toBe("in Arbeit");
+  });
 });
 
 describe("readers", () => {

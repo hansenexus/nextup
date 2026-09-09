@@ -18,7 +18,18 @@ import { promises as fs, watch } from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { type LoadedStatus, loadStatus, packageAsset, projectionFor } from "./build";
+import {
+  type LoadedSkin,
+  parseHarnessState,
+  renderHarnessFrame,
+  renderHarnessPage,
+} from "./harness";
+import { resolveText } from "./i18n";
 import { locate } from "./load";
+import { toInternal, toPublic } from "./project";
+import { renderRoadmapHTML } from "./render-html";
+import type { Skin } from "./types";
+import { buildViewModel } from "./view-model";
 
 export interface ServeOptions {
   port: number;
@@ -60,6 +71,35 @@ async function serveFile(root: string, urlPath: string, res: http.ServerResponse
   } catch {
     send(res, 404, "not found");
   }
+}
+
+/**
+ * Read a skin's stylesheets. A skin names paths in a config file, so they are
+ * resolved against the repo root and refused if they escape it: `serve` is a
+ * dev server, but it should not become a way to read `~/.ssh` through a config
+ * someone pasted in. Concatenated in declared order — a host's token file
+ * before the file that maps those tokens onto the component.
+ */
+async function loadSkin(root: string, skin: Skin): Promise<LoadedSkin | null> {
+  const parts: string[] = [];
+  for (const rel of skin.css) {
+    const file = path.resolve(root, rel);
+    if (!file.startsWith(path.resolve(root))) return null;
+    try {
+      parts.push(await fs.readFile(file, "utf8"));
+    } catch {
+      // A skin that names a moved file should degrade to the defaults, not 500.
+      return null;
+    }
+  }
+  return {
+    id: skin.id,
+    label: skin.label ?? skin.id,
+    css: parts.join("\n"),
+    wrapper: skin.wrapper ?? null,
+    dark: skin.dark ?? null,
+    links: [...(skin.links ?? [])],
+  };
 }
 
 export function createServer(options: ServeOptions): http.Server {
@@ -123,6 +163,51 @@ export function createServer(options: ServeOptions): http.Server {
             `<script>new EventSource("/events").addEventListener("reload",()=>location.reload())</script></body>`
           );
         return send(res, 200, html, TYPES[".html"]);
+      }
+      // The harness: one view mode, locale, audience, width and ground at a
+      // time, with the axes in the query string so a combination is a link.
+      if (url.pathname === "/harness" || url.pathname === "/harness/frame") {
+        const all = await statuses();
+        const projects = all.map((x) => ({
+          id: x.roadmap.meta.project,
+          // Chrome only, so the file's own first locale is the right one.
+          title: resolveText(x.roadmap.meta.title, x.roadmap.meta.locales[0] ?? "en", [
+            ...x.roadmap.meta.locales,
+          ]),
+          locales: [...x.roadmap.meta.locales],
+        }));
+        if (projects.length === 0) return send(res, 404, "no roadmap under this directory");
+        const located = await locate(options.cwd);
+        const declared = located?.skins ?? [];
+        const state = parseHarnessState(url.searchParams, { projects, skins: declared });
+        if (url.pathname === "/harness")
+          return send(
+            res,
+            200,
+            renderHarnessPage({
+              projects,
+              skins: declared.map((k) => ({ id: k.id, label: k.label ?? k.id })),
+              state,
+            }),
+            TYPES[".html"]
+          );
+        const found = all.find((x) => x.roadmap.meta.project === state.project);
+        if (!found) return send(res, 404, "no such project");
+        // `projectionFor` erases the type for the JSON routes; the harness
+        // renders it, so it takes the typed projection instead.
+        const projection =
+          state.audience === "public"
+            ? toPublic(found.roadmap, found.rollup)
+            : toInternal(found.roadmap, found.rollup, found.file);
+        const vm = buildViewModel(projection, state.locale);
+        const chosen = declared.find((k) => k.id === state.skin);
+        const skin = chosen && located ? await loadSkin(located.root, chosen) : null;
+        return send(
+          res,
+          200,
+          renderHarnessFrame(renderRoadmapHTML(vm, state.view), state.theme, state.locale, skin),
+          TYPES[".html"]
+        );
       }
       if (url.pathname === "/nextup-roadmap.iife.js") {
         const bundle = await packageAsset("dist/wc/nextup-roadmap.iife.js");

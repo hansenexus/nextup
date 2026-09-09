@@ -26,6 +26,7 @@ import type {
   publicPhaseSchema,
   publicRoadmapSchema,
   roadmapSchema,
+  skinSchema,
   sourceKindSchema,
   sourceSchema,
   taskSchema,
@@ -54,6 +55,7 @@ export type Roadmap = z.infer<typeof roadmapSchema>;
 export type RoadmapInput = z.input<typeof roadmapSchema>;
 
 export type NextupConfig = z.infer<typeof configSchema>;
+export type Skin = z.infer<typeof skinSchema>;
 export type EstateConfig = z.infer<typeof estateSchema>;
 
 export type PublicPhase = z.infer<typeof publicPhaseSchema>;

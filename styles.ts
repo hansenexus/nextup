@@ -6,6 +6,32 @@
  * fighting selectors.
  */
 
+/** The two palettes, declared once and emitted three ways: the light one as
+ *  the element's own defaults, the dark one under both the media query and the
+ *  `data-nextup-theme` attribute. Keeping them here is what stops the forced
+ *  theme from drifting away from the automatic one. */
+const LIGHT_VARS = `
+    --nextup-fg: #1a1a1a;
+    --nextup-fg-muted: #6b6b6b;
+    --nextup-card-bg: #ffffff;
+    --nextup-border: #e3e3e3;
+    --nextup-accent: #0e8a16;
+    --nextup-now: #1d76db;
+    --nextup-warn: #b45309;
+    --nextup-danger: #b60205;
+`;
+
+const DARK_VARS = `
+    --nextup-fg: #ececec;
+    --nextup-fg-muted: #a3a3a3;
+    --nextup-card-bg: #171717;
+    --nextup-border: #333;
+    --nextup-accent: #3fb950;
+    --nextup-now: #58a6ff;
+    --nextup-warn: #d29922;
+    --nextup-danger: #f85149;
+`;
+
 export const STYLES = `
 .nextup-roadmap {
   --nextup-fg: #1a1a1a;
@@ -26,6 +52,10 @@ export const STYLES = `
   line-height: 1.45;
 }
 .nextup-roadmap * { box-sizing: border-box; }
+/* The cell views below ask a container query, not a media query: this
+   component is a block on someone else's page and is as likely to be narrow
+   in a sidebar on a desktop as on a phone. */
+.nextup-roadmap { container-type: inline-size; container-name: nextup; }
 .nextup-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; margin-bottom: var(--nextup-gap); }
 .nextup-header h2 { margin: 0; font-size: 1.4rem; }
 .nextup-version { color: var(--nextup-fg-muted); font-size: 0.85rem; }
@@ -40,6 +70,7 @@ export const STYLES = `
 .nextup-horizon { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--nextup-fg-muted); white-space: nowrap; }
 .nextup-phase.is-current .nextup-horizon { color: var(--nextup-now); }
 .nextup-goal { margin: 4px 0 0; color: var(--nextup-fg-muted); font-size: 0.9rem; }
+.nextup-gets { display: none; }
 .nextup-meta { display: flex; gap: 10px; font-size: 0.8rem; color: var(--nextup-fg-muted); margin: 6px 0 10px; }
 .nextup-progress { height: 4px; background: var(--nextup-border); border-radius: 2px; overflow: hidden; margin-bottom: 10px; }
 .nextup-progress > span { display: block; height: 100%; background: var(--nextup-accent); }
@@ -75,16 +106,107 @@ export const STYLES = `
 .nextup-roadmap.is-view-compact .nextup-milestones,
 .nextup-roadmap.is-view-compact .nextup-links { display: none; }
 .nextup-empty { color: var(--nextup-fg-muted); font-style: italic; }
-@media (prefers-color-scheme: dark) {
-  .nextup-roadmap {
-    --nextup-fg: #ececec;
-    --nextup-fg-muted: #a3a3a3;
-    --nextup-card-bg: #171717;
-    --nextup-border: #333;
-    --nextup-accent: #3fb950;
-    --nextup-now: #58a6ff;
-    --nextup-warn: #d29922;
-    --nextup-danger: #f85149;
-  }
+/* ── ledger ──────────────────────────────────────────────────────────
+   The roadmap as a statement: one column, phase order intact, and three
+   fixed cells per item (glyph, title+summary, status) so status never
+   competes with the title for the eye. Shipped phases collapse to a line
+   and carry gets_you as their whole content — the payoff, not the
+   feature list. */
+.nextup-roadmap.is-view-ledger .nextup-phases { grid-template-columns: 1fr; gap: 0; }
+.nextup-roadmap.is-view-ledger .nextup-phase { border: 0; border-bottom: 1px solid var(--nextup-border); border-radius: 0; padding: 14px 0; background: none; opacity: 1; }
+.nextup-roadmap.is-view-ledger .nextup-phase.is-current { box-shadow: none; border-left: 4px solid var(--nextup-now); padding-left: 12px; }
+.nextup-roadmap.is-view-ledger .nextup-phase-head h3 { font-size: 1.35rem; letter-spacing: -0.01em; }
+.nextup-roadmap.is-view-ledger .nextup-gets { display: block; margin: 6px 0 0; font-size: 1.05rem; font-weight: 500; max-width: 40ch; }
+.nextup-roadmap.is-view-ledger .nextup-goal { max-width: 62ch; }
+.nextup-roadmap.is-view-ledger .nextup-progress { display: none; }
+.nextup-roadmap.is-view-ledger .nextup-items { gap: 0; margin-top: 10px; }
+.nextup-roadmap.is-view-ledger .nextup-item { display: grid; grid-template-columns: 28px minmax(0, 1fr) max-content; align-items: baseline; column-gap: 12px; border-left: 0; border-top: 1px solid var(--nextup-border); padding: 8px 0; }
+.nextup-roadmap.is-view-ledger .nextup-item-title { grid-column: 2; font-size: 0.95rem; }
+.nextup-roadmap.is-view-ledger .nextup-item-summary { grid-column: 2; }
+.nextup-item-status { grid-row: 1; text-align: right; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--nextup-fg-muted); white-space: nowrap; }
+/* Ledger is glyph/body/status; bands insert the phase tag before the status. */
+.nextup-roadmap.is-view-ledger .nextup-item-status { grid-column: 3; }
+.nextup-roadmap.is-view-bands .nextup-item-status { grid-column: 4; }
+/* Anything else the item renders belongs in the content column, not in the
+   glyph gutter that auto-placement would pick. */
+.nextup-roadmap.is-view-ledger .nextup-links,
+.nextup-roadmap.is-view-ledger .nextup-internal,
+.nextup-roadmap.is-view-bands .nextup-links,
+.nextup-roadmap.is-view-bands .nextup-internal { grid-column: 2; }
+
+/* Shipped phases are one line: title, payoff, horizon. */
+.nextup-roadmap.is-view-ledger .nextup-phase.is-done { display: grid; grid-template-columns: minmax(0, 14rem) minmax(0, 1fr) max-content; align-items: baseline; column-gap: 12px; padding: 8px 0; }
+.nextup-roadmap.is-view-ledger .nextup-phase.is-done .nextup-phase-head { display: contents; }
+.nextup-roadmap.is-view-ledger .nextup-phase.is-done .nextup-phase-head h3 { grid-column: 1; font-size: 0.95rem; font-weight: 500; }
+.nextup-roadmap.is-view-ledger .nextup-phase.is-done .nextup-gets { grid-column: 2; grid-row: 1; margin: 0; font-size: 0.9rem; font-weight: 400; color: var(--nextup-fg-muted); max-width: none; }
+.nextup-roadmap.is-view-ledger .nextup-phase.is-done .nextup-horizon { grid-column: 3; grid-row: 1; text-align: right; }
+.nextup-roadmap.is-view-ledger .nextup-phase.is-done .nextup-goal,
+.nextup-roadmap.is-view-ledger .nextup-phase.is-done .nextup-meta,
+.nextup-roadmap.is-view-ledger .nextup-phase.is-done .nextup-items,
+.nextup-roadmap.is-view-ledger .nextup-phase.is-done .nextup-milestones { display: none; }
+
+/* The glyph column. Decorative, hence content in CSS. */
+.nextup-mark { grid-column: 1; grid-row: 1; font-variant-numeric: tabular-nums; color: var(--nextup-fg-muted); text-align: center; }
+.nextup-mark::before { content: "·"; }
+.nextup-item.is-planned .nextup-mark::before { content: "□"; }
+.nextup-item.is-in-progress .nextup-mark::before { content: "▶"; }
+.nextup-item.is-blocked .nextup-mark::before { content: "×"; }
+.nextup-item.is-done .nextup-mark::before { content: "■"; }
+.nextup-item.is-dropped .nextup-mark::before { content: "–"; }
+.nextup-item.is-in-progress .nextup-mark { color: var(--nextup-now); }
+.nextup-item.is-blocked .nextup-mark { color: var(--nextup-danger); }
+.nextup-item.is-done .nextup-mark { color: var(--nextup-accent); }
+.nextup-item.is-blocked .nextup-item-status { color: var(--nextup-danger); }
+.nextup-item.is-in-progress .nextup-item-status { color: var(--nextup-fg); }
+
+/* ── bands ───────────────────────────────────────────────────────────
+   Status first, phase order second: one full-width band per status in
+   urgency order, each item tagged with the phase it belongs to. in-progress
+   and blocked keep their band when empty, because an empty
+   one is the news. */
+.nextup-bands { display: grid; gap: 0; }
+.nextup-band { border-bottom: 1px solid var(--nextup-border); }
+.nextup-band-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--nextup-border); }
+.nextup-band-head h3 { margin: 0; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; }
+.nextup-count { font-size: 0.78rem; color: var(--nextup-fg-muted); font-variant-numeric: tabular-nums; }
+.nextup-band.is-in-progress .nextup-band-head { border-bottom: 2px solid var(--nextup-now); }
+.nextup-band.is-in-progress .nextup-band-head h3 { color: var(--nextup-now); }
+.nextup-band.is-blocked .nextup-band-head { border-bottom: 2px solid var(--nextup-danger); }
+.nextup-band.is-blocked .nextup-band-head h3 { color: var(--nextup-danger); }
+.nextup-band .nextup-items { gap: 0; }
+.nextup-roadmap.is-view-bands .nextup-item { display: grid; grid-template-columns: 28px minmax(0, 1fr) minmax(0, 14rem) max-content; align-items: baseline; column-gap: 12px; border-left: 0; border-bottom: 1px solid var(--nextup-border); padding: 8px 0; }
+.nextup-roadmap.is-view-bands .nextup-item-title { grid-column: 2; }
+.nextup-roadmap.is-view-bands .nextup-item-summary { grid-column: 2; }
+.nextup-item-phase { grid-column: 3; grid-row: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 10px; font-size: 0.75rem; color: var(--nextup-fg-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.nextup-band.is-done .nextup-item-title { font-weight: 500; color: var(--nextup-fg-muted); }
+.nextup-band.is-done .nextup-item-summary { display: none; }
+.nextup-band.is-proposed .nextup-item-title { font-weight: 500; }
+/* ── narrow ──────────────────────────────────────────────────────────
+   Fixed columns cannot hold at a phone width: the title, the phase tag and
+   the status word end up on top of each other. Below the breakpoint every
+   cell view becomes glyph + stacked content, with the metadata on its own
+   line under the title. */
+@container nextup (max-width: 640px) {
+  .nextup-roadmap.is-view-ledger .nextup-item,
+  .nextup-roadmap.is-view-bands .nextup-item { grid-template-columns: 22px minmax(0, 1fr); row-gap: 2px; }
+  .nextup-roadmap.is-view-ledger .nextup-item-status,
+  .nextup-roadmap.is-view-bands .nextup-item-status { grid-column: 2; grid-row: auto; text-align: left; }
+  .nextup-roadmap.is-view-bands .nextup-item-phase { grid-column: 2; grid-row: auto; white-space: normal; padding-right: 0; }
+  .nextup-roadmap.is-view-ledger .nextup-phase.is-done { grid-template-columns: minmax(0, 1fr); row-gap: 2px; }
+  .nextup-roadmap.is-view-ledger .nextup-phase.is-done .nextup-phase-head h3,
+  .nextup-roadmap.is-view-ledger .nextup-phase.is-done .nextup-gets,
+  .nextup-roadmap.is-view-ledger .nextup-phase.is-done .nextup-horizon { grid-column: 1; grid-row: auto; text-align: left; }
+  .nextup-roadmap.is-view-ledger .nextup-phase.is-current { padding-left: 10px; }
+  .nextup-roadmap.is-view-ledger .nextup-phase-head h3 { font-size: 1.15rem; }
+  .nextup-roadmap.is-view-ledger .nextup-gets { font-size: 1rem; }
 }
+
+@media (prefers-color-scheme: dark) {
+  .nextup-roadmap { ${DARK_VARS} }
+}
+/* The same palette as an attribute, so a host with its own theme toggle (or a
+   preview harness that must show both grounds side by side) can force it
+   without waiting on the OS. Set data-nextup-theme on any ancestor. */
+[data-nextup-theme="dark"] .nextup-roadmap { ${DARK_VARS} }
+[data-nextup-theme="light"] .nextup-roadmap { ${LIGHT_VARS} }
 `;

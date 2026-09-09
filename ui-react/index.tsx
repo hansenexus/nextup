@@ -14,12 +14,17 @@ import {
   type MilestoneView,
   type PhaseView,
   type RoadmapView,
+  type StatusGroupView,
 } from "../view-model";
 
-export type { AnyRoadmap, ItemView, MilestoneView, PhaseView, RoadmapView };
+export type { AnyRoadmap, ItemView, MilestoneView, PhaseView, RoadmapView, StatusGroupView };
 export { buildViewModel };
 
-export type RoadmapViewMode = "phases" | "list" | "compact";
+/** Mirrors `ViewMode` in `render-html.ts`; see the note there on why the two
+ *  new modes need markup of their own. */
+export type RoadmapViewMode = "phases" | "list" | "compact" | "ledger" | "bands";
+
+const CELL_MODES: ReadonlySet<RoadmapViewMode> = new Set<RoadmapViewMode>(["ledger", "bands"]);
 
 export interface RoadmapProps {
   data: AnyRoadmap;
@@ -34,17 +39,32 @@ function Badge({ label, cls }: { label: string; cls: string }) {
   return <span className={`nextup-badge is-${cls}`}>{label}</span>;
 }
 
-function Item({ it, view }: { it: ItemView; view: RoadmapView }) {
+function Item({
+  it,
+  view,
+  mode = "phases",
+}: {
+  it: ItemView;
+  view: RoadmapView;
+  mode?: RoadmapViewMode;
+}) {
   const i = it.internal;
+  const cells = CELL_MODES.has(mode);
   const pending = i ? i.tasks.filter((t) => t.dispatched === null) : [];
   return (
     <li className={`nextup-item is-${it.status}`} id={`${view.project}-${it.id}`} data-item={it.id}>
+      {/* Decorative: the status is written out beside it. */}
+      {cells ? <span className="nextup-mark" aria-hidden="true" /> : null}
       <div className="nextup-item-title">
         {it.title}
-        <Badge label={it.statusLabel} cls={it.status} />
+        {cells ? null : <Badge label={it.statusLabel} cls={it.status} />}
         {i && i.visibility === "internal" ? <Badge label="internal" cls="internal" /> : null}
       </div>
       {it.summary ? <p className="nextup-item-summary">{it.summary}</p> : null}
+      {cells && mode === "bands" ? (
+        <span className="nextup-item-phase">{`${it.phaseId} · ${it.phaseTitle}`}</span>
+      ) : null}
+      {cells ? <span className="nextup-item-status">{it.statusLabel}</span> : null}
       {it.links.length > 0 ? (
         <ul className="nextup-links">
           {it.links.map((l) => (
@@ -96,7 +116,15 @@ function Milestone({ m }: { m: MilestoneView }) {
   );
 }
 
-function Phase({ p, view }: { p: PhaseView; view: RoadmapView }) {
+function Phase({
+  p,
+  view,
+  mode = "phases",
+}: {
+  p: PhaseView;
+  view: RoadmapView;
+  mode?: RoadmapViewMode;
+}) {
   const pct = p.progress.total > 0 ? Math.round((p.progress.done / p.progress.total) * 100) : 0;
   return (
     <section
@@ -110,6 +138,7 @@ function Phase({ p, view }: { p: PhaseView; view: RoadmapView }) {
           {p.target ? ` · ${p.target}` : null}
         </span>
       </div>
+      {p.getsYou ? <p className="nextup-gets">{p.getsYou}</p> : null}
       {p.goal ? <p className="nextup-goal">{p.goal}</p> : null}
       <div className="nextup-meta">
         <span>{p.progress.label}</span>
@@ -128,7 +157,7 @@ function Phase({ p, view }: { p: PhaseView; view: RoadmapView }) {
       ) : (
         <ul className="nextup-items">
           {p.items.map((it) => (
-            <Item key={it.id} it={it} view={view} />
+            <Item key={it.id} it={it} view={view} mode={mode} />
           ))}
         </ul>
       )}
@@ -140,6 +169,26 @@ function Phase({ p, view }: { p: PhaseView; view: RoadmapView }) {
           ))}
         </div>
       ) : null}
+    </section>
+  );
+}
+
+function Band({ g, view }: { g: StatusGroupView; view: RoadmapView }) {
+  return (
+    <section className={`nextup-band is-${g.status}`} data-status={g.status}>
+      <div className="nextup-band-head">
+        <h3>{g.label}</h3>
+        <span className="nextup-count">{g.items.length}</span>
+      </div>
+      {g.items.length === 0 ? (
+        <p className="nextup-empty">—</p>
+      ) : (
+        <ul className="nextup-items">
+          {g.items.map((it) => (
+            <Item key={it.id} it={it} view={view} mode="bands" />
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
@@ -158,11 +207,23 @@ export function Roadmap({ data, locale, view = "phases", className, children }: 
         {vm.stale ? <span className="nextup-stale">{vm.staleLabel}</span> : null}
         {children}
       </header>
-      <div className="nextup-phases">
-        {vm.phases.map((p) => (
-          <Phase key={p.id} p={p} view={vm} />
-        ))}
-      </div>
+      {view === "bands" ? (
+        <div className="nextup-bands">
+          {vm.statusGroups
+            .filter(
+              (g) => g.items.length > 0 || g.status === "in-progress" || g.status === "blocked"
+            )
+            .map((g) => (
+              <Band key={g.status} g={g} view={vm} />
+            ))}
+        </div>
+      ) : (
+        <div className="nextup-phases">
+          {vm.phases.map((p) => (
+            <Phase key={p.id} p={p} view={vm} mode={view} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
