@@ -33,6 +33,21 @@ describe("<nextup-roadmap>", () => {
     el.setAttribute("view", "list");
     expect(el.shadowRoot?.innerHTML).toContain("is-view-list");
   });
+  it("gives the progress bar an accessible name in the element's lang", () => {
+    const el = document.createElement("nextup-roadmap") as NextupRoadmapElement;
+    document.body.appendChild(el);
+    el.setAttribute("lang", "de");
+    el.data = data;
+    const bar = el.shadowRoot?.querySelector('[role="progressbar"]');
+    expect(bar?.getAttribute("aria-label")).toMatch(/^\d+ von \d+ erledigt$/);
+    expect(bar?.getAttribute("aria-valuemin")).toBe("0");
+    expect(bar?.getAttribute("aria-valuemax")).toBe(String(data.phases[0]?.progress.total));
+    expect(bar?.getAttribute("aria-valuenow")).toBe(String(data.phases[0]?.progress.done));
+    el.setAttribute("lang", "en");
+    expect(
+      el.shadowRoot?.querySelector('[role="progressbar"]')?.getAttribute("aria-label")
+    ).toMatch(/^\d+ of \d+ done$/);
+  });
   it("shows a placeholder before data arrives", () => {
     const el = document.createElement("nextup-roadmap") as NextupRoadmapElement;
     document.body.appendChild(el);

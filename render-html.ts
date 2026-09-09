@@ -97,8 +97,9 @@ function renderPhase(p: PhaseView, view: RoadmapView, mode: ViewMode = "phases")
   if (p.getsYou) parts.push(`<p class="nextup-gets">${esc(p.getsYou)}</p>`);
   if (p.goal) parts.push(`<p class="nextup-goal">${esc(p.goal)}</p>`);
   parts.push(`<div class="nextup-meta"><span>${esc(p.progress.label)}</span></div>`);
+  // Counted in items, not percent, and named — see the React component.
   parts.push(
-    `<div class="nextup-progress" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div>`
+    `<div class="nextup-progress" role="progressbar" aria-label="${esc(p.progress.label)}" aria-valuemin="0" aria-valuemax="${p.progress.total}" aria-valuenow="${p.progress.done}"><span style="width:${pct}%"></span></div>`
   );
   if (p.items.length === 0) parts.push(`<p class="nextup-empty">—</p>`);
   else {
