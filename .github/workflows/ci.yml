@@ -25,18 +25,19 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-# On the estate's Hetzner runners since 2026-09-17: the org's 3000 included Actions
-# minutes ran out at 16:57 UTC that day and every GitHub-hosted job in hansenexus
-# stopped starting. The spending limit stays at $0.
-# Ruling: dec_2026-09-17_global-ci-on-hetzner-fleet-no-hosted-minutes
+# GitHub-hosted runners: this repo is public, and the self-hosted pool is
+# reserved for private repos (#10).
 jobs:
   check:
-    runs-on: [self-hosted, linux, x64, hetzner]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - run: bun install --frozen-lockfile
 
@@ -50,7 +51,7 @@ jobs:
         run: bun run test
 
   tarball:
-    runs-on: [self-hosted, linux, x64, hetzner]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
@@ -82,7 +83,7 @@ jobs:
           test -s "$RUNNER_TEMP/site"/index.html && test -s "$RUNNER_TEMP/site"/nextup-roadmap.iife.js && test -s "$RUNNER_TEMP/internal"/roadmap.internal.json
 
   dist:
-    runs-on: [self-hosted, linux, x64, hetzner]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
