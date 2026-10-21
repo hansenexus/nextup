@@ -11,6 +11,9 @@ name: ci
 #   dist     — the bundled entry actually starts under plain node. The bin is
 #              built by `prepublishOnly`, so nothing else would notice it
 #              breaking until a publish had already gone out.
+#   workflow-policy — zizmor and actionlint over .github/workflows (#16).
+#
+# `CI Result` is the one aggregate over all of them.
 
 on:
   pull_request:
@@ -23,19 +26,21 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # A newer push to a PR supersedes the old run; a run on main always finishes.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # GitHub-hosted runners: this repo is public, and the self-hosted pool is
 # reserved for private repos (#10).
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: latest
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
 
@@ -52,12 +57,13 @@ jobs:
 
   tarball:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: latest
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
 
@@ -84,12 +90,13 @@ jobs:
 
   dist:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: latest
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
 
@@ -100,3 +107,59 @@ jobs:
           set -euo pipefail
           bun run build
           node dist/cli.js --help
+
+  # The estate's shared workflow-policy workflow lives in a private repo, which
+  # a public repo cannot call (#16). This is its equivalent, inlined: both
+  # tools are release binaries pinned by version and sha256. Bump a version
+  # together with its checksum.
+  workflow-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      ZIZMOR_VERSION: 1.30.1
+      ZIZMOR_SHA256: e65324f4430c2717591937edcec90ccbefaf14c174f8ec9415e03ca875b46e1a
+      ACTIONLINT_VERSION: 1.7.12
+      ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - name: Install zizmor and actionlint
+        run: |
+          set -euo pipefail
+          bin="$RUNNER_TEMP/bin" && mkdir -p "$bin" && cd "$RUNNER_TEMP"
+          curl -fsSLo zizmor.tgz "https://github.com/zizmorcore/zizmor/releases/download/v${ZIZMOR_VERSION}/zizmor-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${ZIZMOR_SHA256}  zizmor.tgz" | sha256sum -c -
+          tar xzf zizmor.tgz -C "$bin" zizmor
+          curl -fsSLo actionlint.tgz "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "${ACTIONLINT_SHA256}  actionlint.tgz" | sha256sum -c -
+          tar xzf actionlint.tgz -C "$bin" actionlint
+          echo "$bin" >> "$GITHUB_PATH"
+
+      - name: zizmor
+        run: zizmor --offline --min-severity medium --min-confidence medium .github/workflows
+
+      - name: actionlint
+        run: actionlint -color
+
+  # The single check to require: green only when every job above succeeded,
+  # so a skipped or cancelled job does not count as a pass.
+  ci-result:
+    name: CI Result
+    if: always()
+    needs: [check, tarball, dist, workflow-policy]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: All jobs succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "results: $RESULTS"
+          for r in $RESULTS; do
+            if [ "$r" != "success" ]; then
+              echo "::error::a required job ended with '$r'"
+              exit 1
+            fi
+          done

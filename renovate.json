@@ -1,0 +1,15 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "The estate preset github>hansenexus/hn-infra//renovate/default is private and unreadable from this public repo, so its rules are inlined here (#16). Keep them in step with hn-infra's renovate/default.json.",
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "packageRules": [
+    {
+      "description": "One weekly PR for every GitHub Actions update, digest pins and pin-moves included.",
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions",
+      "groupSlug": "github-actions",
+      "schedule": ["before 8am on Monday"]
+    }
+  ],
+  "timezone": "Europe/Berlin"
+}
