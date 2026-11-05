@@ -21,7 +21,7 @@ import {
   renderIssueBody,
   taskKey,
 } from "./markers";
-import { isClosed, linkIssues } from "./rollup";
+import { isClosed, linkIssues, rollupItem } from "./rollup";
 import type { IssueSnapshot, Item, Roadmap, Task } from "./types";
 
 export interface DispatchOptions {
@@ -98,19 +98,18 @@ export function planDispatch(
 
   const { byItem, taskIssue } = linkIssues(roadmap, file, state.issues);
 
-  // Dependencies: every depends_on item must be done (all its issues closed).
+  // Dependencies: every depends_on item must be done, by the same derivation
+  // `nextup status` shows (rollup.ts) — manual `done` counts while nothing is
+  // linked. Lanes and waves are not loaded here: they can only hold an item
+  // back from done, never push one to it.
   if (!options.forceFrontier) {
     const unmet: string[] = [];
     for (const dep of item.depends_on) {
       const depItem = roadmap.items.find((it) => it.id === dep || it.aliases.includes(dep));
       if (!depItem) continue;
       const linked = byItem.get(depItem.id) ?? [];
-      const allDispatched = depItem.tasks.every((t) => taskIssue.has(taskKey(depItem.id, t.id)));
-      const done =
-        linked.length > 0 &&
-        allDispatched &&
-        linked.every((i) => isClosed(i, roadmap.meta.labels.done));
-      if (!done) unmet.push(dep);
+      const { status } = rollupItem(depItem, roadmap, linked, taskIssue, [], null);
+      if (status !== "done") unmet.push(dep);
     }
     if (unmet.length > 0) {
       throw new DispatchRefused(

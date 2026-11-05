@@ -5,7 +5,7 @@ import { applyDispatch, DispatchRefused, planDispatch, renderPlan } from "./disp
 import type { CreateIssueInput, GitHubClient } from "./github";
 import { parseRoadmap } from "./load";
 import { parseBlockedBy, parseMarkers } from "./markers";
-import type { IssueSnapshot } from "./types";
+import type { IssueSnapshot, Item, Roadmap } from "./types";
 
 const HERE = path.dirname(new URL(import.meta.url).pathname);
 const parsed = parseRoadmap(
@@ -133,6 +133,60 @@ describe("planDispatch", () => {
       { itemId: "p2-second-vertical", forceFrontier: true }
     );
     expect(forced.create.length).toBe(1);
+  });
+
+  describe("depends_on uses the derived status (#18)", () => {
+    /** p2-second-vertical (with one task) depending on a fresh item shaped by `dep`. */
+    function withDependency(dep: Partial<Item>): Roadmap {
+      const r = structuredClone(roadmap);
+      const target = r.items.find((i) => i.id === "p2-second-vertical");
+      if (!target) throw new Error("fixture");
+      target.tasks.push({
+        id: "t",
+        title: "T",
+        acceptance: ["a"],
+        verify: ["v"],
+        blocked_by: [],
+        labels: [],
+        fleet_env: null,
+        interactive: false,
+      });
+      target.depends_on = ["p0-dep"];
+      r.items.push({
+        ...structuredClone(target),
+        id: "p0-dep",
+        aliases: [],
+        depends_on: [],
+        tasks: [],
+        issues: [],
+        status: undefined,
+        since: undefined,
+        ...dep,
+      });
+      return r;
+    }
+    const plan = (r: Roadmap) =>
+      planDispatch(r, "roadmap.yaml", { labels: LABELS, issues }, { itemId: "p2-second-vertical" });
+
+    it("goes through when the dependency is manual done with no issues", () => {
+      const r = withDependency({ status: "done", since: "2026-09-01" });
+      expect(plan(r).create.map((c) => c.task.id)).toEqual(["t"]);
+    });
+
+    it("refuses when the dependency is manual planned with no issues", () => {
+      const r = withDependency({ status: "planned", since: "2026-09-01" });
+      expect(() => plan(r)).toThrow(/depends on p0-dep which is not done/);
+    });
+
+    it("goes through when every linked issue of the dependency is closed", () => {
+      const r = withDependency({ issues: [1, 2] });
+      expect(plan(r).create.map((c) => c.task.id)).toEqual(["t"]);
+    });
+
+    it("refuses when a linked issue of the dependency is still open", () => {
+      const r = withDependency({ issues: [1, 3] });
+      expect(() => plan(r)).toThrow(/depends on p0-dep which is not done/);
+    });
   });
 
   it("refuses items without tasks, dropped items, unknown items, missing ready label", () => {
